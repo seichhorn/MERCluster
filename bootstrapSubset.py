@@ -16,7 +16,7 @@ def parse_args():
 	parser.add_argument('-genesPercentileCutoffs', nargs = 2, default = [0.0, 1.0], type = float, metavar = ('min genes percentile','max genes percentile'), help = 'cutoff values to remove cells below/above a certain minimum or maximum number of genes, represented as a percentile, enter minimum first then maximum')
 	parser.add_argument('-mitoPercentileMax', default = 0.02, type = float, help = 'cutoff value to remove cells above a maximum percent of mitochondrial reads, set to None if you want to skip this')
 	parser.add_argument('-geneMin', default = 10, type = int, help = 'minimum number of cells a gene must be present in for it to be included as a potential highly variable gene')
-	parser.add_argument('-preselectedGenesFile', default = None, type = str, help = 'path to a file containing a list of genes to use for PCA/clustering, expects genes to be entered as one per line with nothing else, set to None to skip')
+	parser.add_argument('-preselectedGenesFile', default = 'None', type = str, help = 'path to a file containing a list of genes to use for PCA/clustering, expects genes to be entered as one per line with nothing else, set to None to skip')
 	parser.add_argument('-dispersionMinMaxThreshold', nargs = 3, default = [0.025,4.0,0.5], type = float, metavar = ('min dispersion','max dispersion','dispersion threshold'), help = 'minimum, maximum and cutoff value for selecting highly dispersed genes')
 	parser.add_argument('-regressOut', nargs = '+', default = ['n_counts','percent_mito'], type = str, metavar = 'first variable to regress out', help = 'variables to regress out from counts matrix')
 	parser.add_argument('-usePCA', default = True, type = bool, help = 'whether to perform PCA prior to clustering')
@@ -36,7 +36,7 @@ def parse_args():
 def fullBootstrapSubset():
 	args = parse_args()
 	ex1 = experiment.Experiment(args.dataFile, args.outputLocation)
-	ex1 = ex1.cutToCellList(args.pathToCellTypes, args.pathToCellLabels, args.cellType)
+	ex1.cutToCellList(args.pathToCellTypes, args.pathToCellLabels, args.cellType)
 	ex1.bootstrapCells(frac = args.bootstrapFrac)
 	ex1.selectVariableGenes(preselectedGenesFile = args.preselectedGenesFile, dispersionMin = args.dispersionMinMaxThreshold[0], dispersionMax = args.dispersionMinMaxThreshold[1], dispersionThreshold = args.dispersionMinMaxThreshold[2])
 	ex1.processData(regressOut=args.regressOut)

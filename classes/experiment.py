@@ -114,9 +114,10 @@ class Experiment:
 		if len(clusters) == 0:
 			print('No clusters were identified matching the requested type, check that the requested name exists within {}'.format(pathToCellTypes))
 		else:
-			cellFile = pd.read_table(pathToCellLabels, header = None, index_col = 0)
+			cellFile = pd.read_table(pathToCellLabels, index_col = 0)
 			cells = cellFile[cellFile[cellFile.columns.values.tolist()[0]].isin(clusters)].index.values.tolist()
 			self.dataset = self.dataset[cells,:]
+			print('cut dataset to {} cells'.format(self.dataset.shape[0]))
 
 	def selectVariableGenes(self, preselectedGenesFile='None', dispersionMin=0.025, dispersionMax=4.0, dispersionThreshold=0.5):
 		sc.pp.normalize_per_cell(self.dataset)

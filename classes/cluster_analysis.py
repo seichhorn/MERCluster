@@ -14,8 +14,6 @@ sc.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hint
 sc.settings.set_figure_params(dpi=150)  # low dpi (dots per inch) yields small inline figures
 sc.logging.print_versions()
 
-today = datetime.date.today()
-
 
 class ClusterAnalysis:
 
