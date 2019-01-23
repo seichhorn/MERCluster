@@ -3,10 +3,10 @@
 Code to simplify clustering of sc-seq and MERFISH data, largely based on scanpy functionality
 
 
-Install:
+Install:  
 Code was written based on the development version of scanpy, this originally offered additional functionality to that available from conda. To recapitulate the code base I'm using:
 
-clone MERClusters  
+clone MERCluster  
 cd MERCluster/  
 conda create --name myenv --file /path/to/spec-file.txt  
 source activate myenv  
