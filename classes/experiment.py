@@ -35,10 +35,11 @@ class Experiment:
 		self.output = output
 
 	def save(self,outputFile = 'file.h5ad'):
-		if outputFile.split('.')[-4:] != 'h5ad':
+		if outputFile[-4:] != 'h5ad':
 			print('Currently only h5ad writing is supported, please update the file extension and submit again')
 		else:
-			self.dataset.write(outputFile)
+			self.addKeys()
+			self.dataset.write(str(self.output) + str(outputFile))
 
 	def filter(self, verbose=True, countsPercentileCutoffs=[0.0,1.0], genesPercentileCutoffs=[0.0,1.0], mitoPercentileMax="None", geneMin=10, byBatch = False):
 
@@ -258,8 +259,19 @@ class Experiment:
 
 		self.dataset = downSampleAD
 
+	def tSNE(self,pcs = 50):
+		try:
+			n_pcs = self.pcsToUse
+		except AttributeError:
+			n_pcs = pcs
+		sc.tl.tsne(self.dataset, n_pcs = n_pcs)
 
 
+	def addKeys(self):
+		try:
+			self.dataset.uns['selected_pcs'] = self.pcsToUse
+		except AttributeError:
+			pass
 
 
 

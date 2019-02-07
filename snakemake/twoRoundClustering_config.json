@@ -3,20 +3,21 @@
     {
         "pythonDir" : "/n/home13/seichhorn/.conda/envs/scanpy/bin/python",
         "codeDir" : "/n/home13/seichhorn/Python_code/MERCluster/",
-        "rawData" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/raw_data/combined_data_geneNames_180912.h5ad"
+        "rawData" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/raw_data/combined_data_geneNames_180912.h5ad",
+        "fileName" : "combined_data_geneNames_180912"
     },
     "Round1" :
     {
         "Paths" :
         {
-            "outputDir" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190107/Round1/",
-            "analysisDir" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190107/Round1/analysis/"
+            "outputDir" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190125/Round1/",
+            "analysisDir" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190125/Round1/analysis/"
         },
         "Filters" :
         {
         "byBatch": "True",
-        "countsCutoffMin":0.02,
-        "countsCutoffMax":0.98,    
+        "countsCutoffMin":0.01,
+        "countsCutoffMax":0.99,    
         },    
         "kValues" :
         [
@@ -69,8 +70,8 @@
     {
         "Paths" :
         {
-            "outputDir" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190107/Round2/",
-            "analysisDir" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190107/Round2/analysis/"
+            "outputDir" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190125/Round2/",
+            "analysisDir" : "/n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190125/Round2/analysis/"
         },
         "Filters" :
         {

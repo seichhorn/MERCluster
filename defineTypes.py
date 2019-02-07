@@ -13,6 +13,7 @@ def parse_args():
 	parser.add_argument('-experimentData', type = str, help = 'path to raw data for constructing an experiment object')
 	parser.add_argument('-cutUnstable', default = False, type = bool, help = 'remove cells assigned to unstable clusters')
 	parser.add_argument('-geneIdentityFile', default = 'None', type = str, help = 'path to file containing genes to identify cell types')
+	parser.add_argument('-cellType', default = None, type = str, help = 'name of cell type to perform analysis with, must match name in cluster files')
 	args = parser.parse_args()
 
 	return args
@@ -21,7 +22,7 @@ def parse_args():
 def processClustering():
 	args = parse_args()
 
-	cl1 = cluster_analysis.ClusterAnalysis(args.clusterDir, args.outputLocation)
+	cl1 = cluster_analysis.ClusterAnalysis(args.clusterDir, args.outputLocation, cellType = args.cellType)
 	cl1.selectK(plot = args.plot)
 	
 	ex1 = experiment.Experiment(args.experimentData, args.outputLocation)

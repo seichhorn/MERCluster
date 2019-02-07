@@ -9,6 +9,8 @@ import datetime
 import re
 from collections import defaultdict
 from sklearn import preprocessing 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 sc.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hints (3)
 sc.settings.set_figure_params(dpi=150)  # low dpi (dots per inch) yields small inline figures
@@ -17,7 +19,7 @@ sc.logging.print_versions()
 
 class ClusterAnalysis:
 
-	def __init__(self, clusteringDir, outputDir):
+	def __init__(self, clusteringDir, outputDir, cellType = None):
 		self.outputDir = outputDir
 		if not os.path.exists(self.outputDir):
 			os.makedirs(self.outputDir)
@@ -26,6 +28,7 @@ class ClusterAnalysis:
 			print('The full clustering directory does not exist')
 		else:
 			self.clusteringDir = clusteringDir
+		self.cellType = cellType
 		
 	def selectK(self, plot = True):
 
@@ -36,13 +39,21 @@ class ClusterAnalysis:
 		baseDir = os.listdir(self.clusteringDir)
 		onlyfiles = [f for f in baseDir if isfile(join(self.clusteringDir, f))]
 
+		if self.cellType:
+			onlyfiles = [f for f in onlyfiles if 'type_{}'.format(self.cellType) in f]
+
 		fullClustering = [x for x in onlyfiles if 'bootstrap' not in x]
 		fullClustering = [[int(kValuePattern.search(x).group().split('_')[1]),int(resolutionPattern.search(x).group().split('_')[1]),x] for x in fullClustering]
 		fullClustering.sort(key = lambda x: (x[0],x[1]))
 		fullClustering = [x[2] for x in fullClustering]
 
 		for f in fullClustering:
-			currentFile = pd.read_table(self.clusteringDir+f,index_col = 0)
+			if f.split('.')[-1] == 'csv':
+				currentFile = pd.read_csv(self.clusteringDir+f,index_col = 0)
+			elif f.split('.')[-1] == 'txt':
+				currentFile = pd.read_table(self.clusteringDir+f,index_col = 0)
+			else:
+				print('unknown file extension {}'.format(f.split('.')[-1]))
 			kval = kValuePattern.search(f).group().split('_')[1]
 			res = resolutionPattern.search(f).group().split('_')[1]
 			currentFile.columns = ['{}_{}'.format(kval,res)]
@@ -71,7 +82,12 @@ class ClusterAnalysis:
 			specificK = re.compile('kValue_{}_resolution_{}_'.format(kValue.split('_')[0],kValue.split('_')[1]))
 			for f in bootstrapClustering:
 				if specificK.search(f):
-					currentFile = pd.read_table(self.clusteringDir+f,index_col = 0)
+					if f.split('.')[-1] == 'csv':
+						currentFile = pd.read_csv(self.clusteringDir+f,index_col = 0)
+					elif f.split('.')[-1] == 'txt':
+						currentFile = pd.read_table(self.clusteringDir+f,index_col = 0)
+					else:
+						print('unknown file extension {}'.format(f.split('.')[-1]))
 					bootstrapCollection.append(currentFile)
 			for boot in bootstrapCollection:
 				currentBoot = boot
@@ -108,7 +124,10 @@ class ClusterAnalysis:
 		clusteringResult = fullClusteringDF.loc[:,[selectedK]].copy()
 		clusteringResult['Stable'] = clusteringResult[selectedK].isin(stableClusters[selectedK]) 
 
-		clusteringResult.to_csv(str(self.outputDir)+'stability_analysis.txt',sep = '\t')
+		if self.cellType:
+			clusteringResult.to_csv(str(self.outputDir)+'stability_analysis_{}.txt'.format(self.cellType),sep = '\t')
+		else:
+			clusteringResult.to_csv(str(self.outputDir)+'stability_analysis.txt',sep = '\t')
 
 		self.clusterLabels = clusteringResult.iloc[:,[0]]
 		self.stability = clusteringResult.iloc[:,[1]]
@@ -119,7 +138,10 @@ class ClusterAnalysis:
 			for i, txt in enumerate([x[0] for x in results]):
 			    ax.annotate(str(txt), ([x[3] for x in results][i],[x[1] for x in results][i]))
 			ax.set_xlim(left = 0, right = 1)
-			f.savefig(str(self.outputDir)+'stability_analysis_{}.png'.format(today),bbox_inches = 'tight')
+			if self.cellType:
+				f.savefig(str(self.outputDir)+'stability_analysis_{}.png'.format(self.cellType),bbox_inches = 'tight')
+			else:
+				f.savefig(str(self.outputDir)+'stability_analysis.png',bbox_inches = 'tight')
 
 
 	def identifyCellTypes(self, experiment, geneIdentityFile = 'None', cutUnstable = False, plot = True):	
@@ -151,6 +173,7 @@ class ClusterAnalysis:
 		else:
 			cellTypes = []
 			allGenes = []
+			genesForIdentification = defaultdict(list)
 			with open(geneIdentityFile,'r') as geneIdentityOpen:
 				for line in geneIdentityOpen:
 					cellType,gene = line.rstrip('\n').split('\t')
@@ -159,7 +182,6 @@ class ClusterAnalysis:
 						cellTypes.append(cellType)
 					allGenes.append(gene)
 
-		clusterdata = self.clusterLabels
 
 #TODO: add a check to make sure that the genes you're requesting are in the data to begin with, would be helpful to print the missing ones
 		rawData = pd.DataFrame(data = experiment.dataset[:,allGenes].X, index = experiment.dataset.obs.index, columns = allGenes)
@@ -178,7 +200,11 @@ class ClusterAnalysis:
 
 		accounted = []
 
-		with open(str(self.outputDir)+'cellTypes.txt','w') as outPathOpen:
+		if self.cellType:
+			outFileName = 'cellTypes_{}'.format(self.cellType)
+		else:
+			outFileName = 'cellTypes'
+		with open(str(self.outputDir) + str(outFileName) + '.txt','w') as outPathOpen:
 			for cellType in cellTypes:
 				genes = genesForIdentification[cellType]
 				mean = clusterZScores.loc[:,genes]
@@ -194,6 +220,6 @@ class ClusterAnalysis:
 		if plot:
 			f,axs = plt.subplots(1,1,figsize = (20,20))
 			sns.heatmap(clusterZScores,vmax = 1, vmin = 0, cmap = 'Purples')
-			f.savefig(str(self.outputDir)+'cellTypes.png',bbox_inches = 'tight', dpi = 200)
+			f.savefig(str(self.outputDir) + str(outFileName) + '.png',bbox_inches = 'tight', dpi = 200)
 
 

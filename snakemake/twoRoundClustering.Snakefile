@@ -17,6 +17,11 @@ bootStrapIterations = list(range(int(config['Round1']['bootStrapIterations'][0])
 subclusterTypes = config['Round2']['cellTypes']
 # rawDataPath = config['Paths']['rawDataPath']
 
+
+rule all:
+	input: expand(config['Round2']['Paths']['analysisDir'] + 'cellTypes_{types}.txt', types=subclusterTypes)
+
+
 rule full_clustering:
 	input:
 		rawData
@@ -53,6 +58,23 @@ rule bootstrap_clustering:
 	shell:
 		pythonPath+" "+codePath+"bootstrapClustering.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSet} -fileNameIteration bootstrap_{wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {wildcards.resolution} "
 
+rule tSNE:
+	input:
+		rawData
+
+	output:
+		out = config['Round1']['Paths']['outputDir'] + 'processed_data/' + config['Paths']['fileName'] + '_tSNE.h5ad' 
+
+	params:
+		byBatch = config['Round1']['Filters']['byBatch'],
+		countsCutoffMin = config['Round1']['Filters']['countsCutoffMin'],
+		countsCutoffMax = config['Round1']['Filters']['countsCutoffMax'],
+		geneSet = config['Round1']['geneSets'],
+		outputDir = config['Round1']['Paths']['outputDir'],
+		outName = 'processed_data/' + config['Paths']['fileName'] + '_tSNE.h5ad'
+
+	shell:
+		pythonPath+" "+codePath+"generate_tSNE.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSet} -outputFileName {params.outName}"
 
 rule select_kValue_R1:
 	output:
@@ -118,16 +140,16 @@ rule subbootstrap_clustering:
 		geneSet = config['Round2']['geneSets']
 
 	shell:
-		pythonPath+" "+codePath+"bootstrapSubset.py {input.experimentData} {params.outputDir} -pathToCellList {input.cellTypes} -cellType {wildcards.types} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSet} -fileNameIteration bootstrap_{wildcards.bootstrap} -cellTypeName type_{wildcards.types} -kValue {wildcards.kValue} -resolution {wildcards.resolution}"
+		pythonPath+" "+codePath+"bootstrapSubset.py {input.experimentData} {params.outputDir} -pathToCellTypes {input.cellTypes} -pathToCellLabels {input.cellLabels} -cellType {wildcards.types} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSet} -fileNameIteration bootstrap_{wildcards.bootstrap} -cellTypeName type_{wildcards.types} -kValue {wildcards.kValue} -resolution {wildcards.resolution}"
 
 rule select_kValue_R2:
 	output:
-		config['Round2']['Paths']['analysisDir'] + 'cellTypes.txt',
-		config['Round2']['Paths']['analysisDir'] + 'stability_analysis.txt'
+		config['Round2']['Paths']['analysisDir'] + 'cellTypes_{types}.txt',
+		config['Round2']['Paths']['analysisDir'] + 'stability_analysis_{types}.txt'
 
 	input:
-		lambda wildcards: expand(config['Round2']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{types}.txt', kValue = config['Round2']['kValues'], resolution = config['Round2']['resolution'], types = subclusterTypes),
-		lambda wildcards: expand(config['Round2']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{types}_bootstrap_{bootstrap}.txt', kValue = config['Round2']['kValues'], resolution = config['Round2']['resolution'], types = subclusterTypes, bootstrap = bootStrapIterations)
+		expand(config['Round2']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{{types}}.txt', kValue = config['Round2']['kValues'], resolution = config['Round2']['resolution']),
+		expand(config['Round2']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{{types}}_bootstrap_{bootstrap}.txt', kValue = config['Round2']['kValues'], resolution = config['Round2']['resolution'], bootstrap = bootStrapIterations)
 
 	params:
 		inputDir = config['Round2']['Paths']['outputDir'] + 'clustering/',
@@ -136,7 +158,7 @@ rule select_kValue_R2:
 		geneIdentityFile = config['Round2']['geneIdentityFile'],
 
 	shell:
-		pythonPath+" "+codePath+"defineTypes2.py {params.inputDir} {params.outputDir} -experimentData {params.experimentData} -geneIdentityFile {params.geneIdentityFile}"
+		pythonPath+" "+codePath+"defineTypes.py {params.inputDir} {params.outputDir} -experimentData {params.experimentData} -geneIdentityFile {params.geneIdentityFile} -cellType {wildcards.types}"
 
 
 

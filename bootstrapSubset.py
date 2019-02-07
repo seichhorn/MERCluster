@@ -25,8 +25,8 @@ def parse_args():
 	parser.add_argument('-clusterMin', default = 10, type = str, help = 'minimum number of cells that must be present in a cluster for it to be included in the final output')
 	parser.add_argument('-verbose', default = True, type = bool, help = 'whether to print messages during processing')
 	parser.add_argument('-trackIterations', default = True, type = bool, help = 'whether to track intermediate clustering results')
-	parser.add_argument('-fileNameIteration', default = None, type = str, help = 'variable to allow appending numbers to file names for bootstrapping iterations')
-	parser.add_argument('-cellTypeName', default = None, type = str, help = 'variable to allow appending cell type to file names')
+	parser.add_argument('-fileNameIteration', default = 'None', type = str, help = 'variable to allow appending numbers to file names for bootstrapping iterations')
+	parser.add_argument('-cellTypeName', default = 'None', type = str, help = 'variable to allow appending cell type to file names')
 	parser.add_argument('-bootstrapFrac', default = 0.8, type = float, help = 'fraction of cells to keep during bootstrapping')
 
 	args = parser.parse_args()
