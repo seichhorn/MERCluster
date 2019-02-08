@@ -42,28 +42,6 @@
         "resolution" :
         [
             1,
-        ],
-        "kValues" :
-        [
-            4,
-            6,
-            8,
-            10,
-            12,
-            15,
-            20,
-            25,
-            30,
-            40,
-            50,
-        ],
-        "bootStrapIterations" :
-        [
-            20
-        ],
-        "resolution" :
-        [
-            1,
         ]
     },
         "Round2" :
