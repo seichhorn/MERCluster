@@ -1,0 +1,13 @@
+{
+    "__default__" :
+    {
+        "account" : "zhuang_lab",
+        "time" : "12:00:00",
+        "n" : 1,
+        "partition" : "zhuang,shared",
+        "mem" : 100000,
+        "exclude" : "holyzhuang01",
+        "out" : "/n/home13/seichhorn/Scratch/%j.stdout.txt",
+        "err" : " /n/home13/seichhorn/Scratch/%j.stdout.txt"
+    }
+}
