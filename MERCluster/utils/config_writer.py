@@ -2,7 +2,7 @@ import argparse
 import os
 
 def parse_args():
-	parser = argparse.ArgumentParser(description = 'process options for clustering')
+	parser = argparse.ArgumentParser(description = 'write a config file for snakemake clustering')
 
 	parser.add_argument('-configFilePath', type = str, help = 'path to use for writing the config file, use .json extension')
 	parser.add_argument('-environment', type = str, help = 'name of conda environment for running scripts, give it a full path to the python executable if your environment is not located in ~/.conda/envs/')
