@@ -21,6 +21,8 @@ pip install -e .
 conda install -c conda-forge python-igraph louvain  
 conda install notebook ipykernel  
 ipython kernel install --user --name scanpy   
+(Note - Leonardo had to run: python -m ipykernel install --user --name mercluster --display-name "Python (mercluster)" instead of the prior line to get the kernel onto jupyter)
+
 pip install dca  
 pip install -U tensorflow  
 git clone https://github.com/DmitryUlyanov/Multicore-TSNE.git  
