@@ -9,7 +9,7 @@ Code was written based on the development version 1.3 of scanpy, this originally
 conda create -n scanpy  
 source activate scanpy  
 
-clone MERCluster
+clone MERCluster  
 cd MERCluster/  
 pip install -e .  
   
