@@ -2,6 +2,8 @@ import argparse
 import os
 import json
 
+##THIS DOES NOT WORK YET, INTENDED TO FUNCTION AS A SNAKEFILE WRITER IN A SIMILAR VEIN AS THE CONFIG WRITER
+
 def parse_args():
 	parser = argparse.ArgumentParser(description = 'process options for clustering')
 
