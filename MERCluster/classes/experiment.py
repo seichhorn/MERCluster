@@ -32,6 +32,13 @@ class Experiment:
 			self.dataset = dataset.copy()
 			self.dataset.var_names_make_unique()
 		self.output = output
+		self.cellType = 'All'
+		try:
+			self.pcsToUse = self.dataset.uns['selected_pcs']
+		except:
+			pass
+		self.bootStrap = False
+
 
 	def save(self,outputFile = 'file.h5ad'):
 		if outputFile[-4:] != 'h5ad':
@@ -108,9 +115,12 @@ class Experiment:
 		if verbose:
 			print('filtered dataset contains {} cells and {} genes, {} removed due to counts/genes cutoff and {} removed due to mitochondrial cutoff'.format(self.dataset.X.shape[0],self.dataset.X.shape[1], totalCells - cellsCutOnCounts, cellsCutOnCounts - cellsCutOnMito))
 
-	def cutToCellList(self,pathToCellTypes, pathToCellLabels, cellType):
+	def cutToCellList(self,pathToCellTypes, pathToCellLabels, cellType, restriction):
 		clusterFile = pd.read_table(pathToCellTypes, header = None, index_col = 0)
-		clusters = clusterFile[clusterFile[clusterFile.columns.values.tolist()[0]] == cellType].index.values.tolist()
+		if restriction == 'strict':
+			clusters = clusterFile[clusterFile[clusterFile.columns.values.tolist()[0]] == cellType].index.values.tolist()
+		elif restriction == 'permissive':
+			clusters = clusterFile[clusterFile[clusterFile.columns.values.tolist()[0]].str.contains(cellType)].index.values.tolist()
 		if len(clusters) == 0:
 			print('No clusters were identified matching the requested type, check that the requested name exists within {}'.format(pathToCellTypes))
 		else:
@@ -118,19 +128,23 @@ class Experiment:
 			cells = cellFile[cellFile[cellFile.columns.values.tolist()[0]].isin(clusters)].index.values.tolist()
 			self.dataset = self.dataset[cells,:]
 			print('cut dataset to {} cells'.format(self.dataset.shape[0]))
+		self.cellType = cellType
 
-	def selectVariableGenes(self, preselectedGenesFile='None', dispersionMin=0.025, dispersionMax=4.0, dispersionThreshold=0.5):
+	def selectVariableGenes(self, preselectedGenesFile='highVar', dispersionMin=0.025, dispersionMax=4.0, dispersionThreshold=0.5):
 		sc.pp.normalize_per_cell(self.dataset)
-		if preselectedGenesFile == 'None':
+		if preselectedGenesFile == 'highVar':
 			filter_result = sc.pp.filter_genes_dispersion(self.dataset.X, min_mean=dispersionMin, max_mean=dispersionMax, min_disp=dispersionThreshold)
 		
 			#Cutting the dataset to just the variable genes
 			self.dataset = self.dataset[:,filter_result.gene_subset]
 
+			self.geneSelection = preselectedGenesFile
+
 		else:
 			preselectedGenes = pd.read_csv(preselectedGenesFile,header = None)[0].values.tolist()
 			self.dataset = self.dataset[:,preselectedGenes]
 
+			self.geneSelection = ''.join(os.path.splitext(os.path.basename(preselectedGenesFile))[0].split('_'))
 
 	def processData(self, regressOut=['n_counts','percent_mito'], zscoreMax=6):
 		sc.pp.log1p(self.dataset)
@@ -175,24 +189,32 @@ class Experiment:
 
 		self.dataset.uns['neighbors']['connectivities'] = scanpy_helpers.neighbor_graph(scanpy_helpers.jaccard_kernel,self.dataset.uns['neighbors']['connectivities'])
 
-	def cluster(self, resolution=1.0, clusterMin=10, trackIterations=False, cellTypeName = 'None', fileNameIteration = 'None'):
+	def cluster(self, resolution=[1.0], clusterMin=10, trackIterations=False, clusteringAlgorithm='louvain'):
 
 		self.resolution = resolution
 		pathToOutput = '{}clustering/'.format(self.output)
 		if not os.path.exists(pathToOutput):
 			os.makedirs(pathToOutput)
+		
 		if trackIterations:
 			pathToFullOutput = '{}clustering/iterationTracking/'.format(self.output)
 			if not os.path.exists(pathToFullOutput):
 				os.makedirs(pathToFullOutput)
-			adjacency = self.dataset.uns['neighbors']['connectivities']
-			g = sc.utils.get_igraph_from_adjacency(adjacency, directed=False)
 
-			import louvain
+		adjacency = self.dataset.uns['neighbors']['connectivities']
+		g = sc.utils.get_igraph_from_adjacency(adjacency, directed=False)
 
-			optimiser = louvain.Optimiser()
+		if clusteringAlgorithm == 'louvain':
+			import louvain as clAlgo
+			print('using louvain algorithm')
+		elif clusteringAlgorithm == 'leiden':
+			import leidenalg as clAlgo
+			print('using leiden algorithm')
+
+		for res in self.resolution:
+			optimiser = clAlgo.Optimiser()
 			tracking = []
-			partition = louvain.RBConfigurationVertexPartition(g,weights = 'weight', resolution_parameter = resolution)
+			partition = clAlgo.RBConfigurationVertexPartition(g,weights = 'weight', resolution_parameter = res)
 			partition_agg = partition.aggregate_partition()
 			print(partition.summary())
 
@@ -206,47 +228,22 @@ class Experiment:
 
 			df = pd.DataFrame(tracking,columns = self.dataset.obs.index).T
 
-			if fileNameIteration == 'None' and cellTypeName == 'None':
-				df.to_csv(pathToFullOutput+'kValue_{}_resolution_{}.txt'.format(self.kValue, int(self.resolution)),sep = '\t')
-			elif fileNameIteration == 'None' and not cellTypeName == 'None':
-				df.to_csv(pathToFullOutput+'kValue_{}_resolution_{}_{}.txt'.format(self.kValue, int(self.resolution), cellTypeName),sep = '\t')
-			elif not fileNameIteration == 'None' and cellTypeName == 'None':
-				df.to_csv(pathToFullOutput+'kValue_{}_resolution_{}_{}.txt'.format(self.kValue, int(self.resolution), fileNameIteration),sep = '\t')
-			elif not fileNameIteration == 'None' and not cellTypeName == 'None':
-				df.to_csv(pathToFullOutput+'kValue_{}_resolution_{}_{}_{}.txt'.format(self.kValue, int(self.resolution), cellTypeName, fileNameIteration),sep = '\t')
-
+			if trackIterations:
+				if self.bootStrap:
+					df.to_csv(pathToFullOutput+'kValue_{}_resolution_{}_type_{}_geneset_{}_bootstrap_{}.txt'.format(self.kValue, int(res), self.cellType, self.geneSelection, self.iteration),sep = '\t')
+				else:
+					df.to_csv(pathToFullOutput+'kValue_{}_resolution_{}_type_{}_geneset_{}.txt'.format(self.kValue, int(res), self.cellType, self.geneSelection),sep = '\t')
 
 			clustering = scanpy_helpers.minimum_cluster_size(df.iloc[:,[-1]].copy(deep=True), min_size = clusterMin)
-			clustering.columns = ['kValue_{}_resolution_{}'.format(self.kValue,int(self.resolution))]
-			print('Clustering yields {} clusters with at least {} cells'.format(clustering['kValue_{}_resolution_{}'.format(self.kValue,int(self.resolution))].unique().astype(int).max(),clusterMin))
+			clustering.columns = ['kValue_{}_resolution_{}'.format(self.kValue,int(res))]
+			print('Clustering yields {} clusters with at least {} cells'.format(clustering['kValue_{}_resolution_{}'.format(self.kValue,int(res))].unique().astype(int).max(),clusterMin))
 		
-			if fileNameIteration == 'None' and cellTypeName == 'None':
-				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}.txt'.format(self.kValue, int(self.resolution)),sep = '\t')
-			elif fileNameIteration == 'None' and not cellTypeName == 'None':
-				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}_{}.txt'.format(self.kValue, int(self.resolution), cellTypeName),sep = '\t')
-			elif not fileNameIteration == 'None' and cellTypeName == 'None':
-				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}_{}.txt'.format(self.kValue, int(self.resolution), fileNameIteration),sep = '\t')
-			elif not fileNameIteration == 'None' and not cellTypeName == 'None':
-				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}_{}_{}.txt'.format(self.kValue, int(self.resolution), cellTypeName, fileNameIteration),sep = '\t')
+			if self.bootStrap:
+				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}_type_{}_geneset_{}_bootstrap_{}.txt'.format(self.kValue, int(res), self.cellType, self.geneSelection, self.iteration),sep = '\t')
+			else:
+				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}_type_{}_geneset_{}.txt'.format(self.kValue, int(res), self.cellType, self.geneSelection),sep = '\t')
 
-		else:
-			sc.tl.louvain(self.dataset, resolution = resolution, use_weights = True)
-
-			clustering = pd.DataFrame(self.dataset.obs['louvain'])
-			clustering = scanpy_helpers.minimum_cluster_size(clustering, min_size = clusterMin)
-			clustering.columns = ['kValue_{}_resolution_{}'.format(self.kValue,int(self.resolution))]
-			print('Clustering yields {} clusters with at least {} cells'.format(clustering['kValue_{}_resolution_{}'.format(self.kValue,int(self.resolution))].unique().astype(int).max(),clusterMin))
-
-			if fileNameIteration == 'None' and cellTypeName == 'None':
-				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}.txt'.format(self.kValue, int(self.resolution)),sep = '\t')
-			elif fileNameIteration == 'None' and not cellTypeName == 'None':
-				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}_{}.txt'.format(self.kValue, int(self.resolution), cellTypeName),sep = '\t')
-			elif not fileNameIteration == 'None' and cellTypeName == 'None':
-				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}_{}.txt'.format(self.kValue, int(self.resolution), fileNameIteration),sep = '\t')
-			elif not fileNameIteration == 'None' and not cellTypeName == 'None':
-				clustering.to_csv(pathToOutput+'kValue_{}_resolution_{}_{}_{}.txt'.format(self.kValue, int(self.resolution), cellTypeName, fileNameIteration),sep = '\t')
-
-	def bootstrapCells(self, frac = 0.8):
+	def bootstrapCells(self, iteration, frac = 0.8):
 		sampleDF = pd.DataFrame(self.dataset.X, index = self.dataset.obs.index, columns = self.dataset.var.index)
 		downSample = sampleDF.sample(frac=frac)
 
@@ -257,6 +254,8 @@ class Experiment:
 		downSampleAD.obs = self.dataset.obs.loc[downSampleAD.obs.index,:]
 
 		self.dataset = downSampleAD
+		self.bootStrap = True
+		self.iteration = iteration
 
 	def tSNE(self,pcs = 50):
 		try:
