@@ -172,7 +172,7 @@ class Experiment:
 		randomVariance = []
 		for i in range(10):
 			shuffled = sc.AnnData(scanpy_helpers.shuffler(pd.DataFrame(self.dataset.X)))
-			sc.tl.pca(shuffled,svd_solver = 'arpack')
+			sc.tl.pca(shuffled, svd_solver = 'arpack', n_comps = pcsToCalc)
 			randomVariance.append(shuffled.uns['pca']['variance'][0])
 
 		#Use only PCs that explain more variance than the random dataframe
