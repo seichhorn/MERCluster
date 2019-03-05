@@ -43,7 +43,7 @@ class ClusterAnalysis:
 		onlyfiles = [f for f in baseDir if isfile(join(self.clusteringDir, f))]
 
 		if self.cellType:
-			cellTypes = ['type_'.format(self.cellType)]
+			cellTypes = ['type_{}'.format(self.cellType)]
 
 		else:
 			cellTypes = list(set([cellTypePattern.search(x).group() for x in onlyfiles if cellTypePattern.search(x)]))
@@ -106,7 +106,12 @@ class ClusterAnalysis:
 							bootstrapCollection.append(currentFile)
 					for boot in bootstrapCollection:
 						currentBoot = boot
-						currentBoot = currentBoot[currentBoot['kValue_{}_resolution_{}'.format(kValue.split('_')[0],kValue.split('_')[1])] != -1]
+						try: 
+							currentBoot = currentBoot[currentBoot['kValue_{}_resolution_{}'.format(kValue.split('_')[0],kValue.split('_')[1])] != -1]
+						except KeyError:
+							print(currentBoot)
+							currentBoot = currentBoot[currentBoot['kValue_{}_resolution_{}'.format(kValue.split('_')[0],kValue.split('_')[1])] != -1]
+
 						currentBoot.columns = ['Bootstrap clustering']
 						combinedFullBoot = currentFull.merge(currentBoot,left_index = True, right_index = True)
 
@@ -142,7 +147,7 @@ class ClusterAnalysis:
 				toCheck.sort(key = lambda x: x[1], reverse = True)
 				selectedK = str(toCheck[0][0])
 
-				print('Choosing {}'.format(selectedK))
+				print('Choosing {} for {} cells'.format(selectedK,cellType))
 				print(results)
 
 				clusteringResult = fullClusteringDF.loc[:,[selectedK]].copy()

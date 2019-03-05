@@ -140,7 +140,7 @@ rule subbootstrap_clustering:
 
 
 	shell:
-		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input.experimentData} {params.outputDir} -pathToCellTypes {input.cellTypes} -pathToCellLabels {input.cellLabels} -cellType {wildcards.cellType} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSet} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -restriction {params.restriction}"
+		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input.experimentData} {params.outputDir} -pathToCellTypes {input.cellTypes} -pathToCellLabels {input.cellLabels} -cellType {wildcards.cellType} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSet} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -restriction {params.restriction} -bootstrapFrac {params.bootstrapFrac}"
 
 
 rule select_kValue_R2:
@@ -159,7 +159,7 @@ rule select_kValue_R2:
 		geneIdentityFile = config['Round2']['geneIdentityFile'],
 
 	shell:
-		pythonPath+" "+codePath+"defineTypes.py {params.inputDir} {params.outputDir} -experimentData {params.experimentData} -geneIdentityFile {params.geneIdentityFile}"
+		pythonPath+" "+codePath+"MERCluster/example_scripts/defineTypes.py {params.inputDir} {params.outputDir} -experimentData {params.experimentData} -geneIdentityFile {params.geneIdentityFile}"
 
 
 

@@ -54,7 +54,14 @@ class Experiment:
 		
 		totalCells = self.dataset.X.shape[0]
 
+		if type(byBatch) == str:
+			if byBatch.upper() == 'TRUE':
+				byBatch = True
+			else:
+				byBatch = False
+		print('byBatch set to {} of type {}'.format(byBatch,type(byBatch)))
 		if byBatch:
+			print('Filtering each batch independently')
 			sc.pp.filter_cells(self.dataset, min_genes=0)
 			self.dataset.obs['n_counts'] = self.dataset.X.sum(1)
 
@@ -73,8 +80,9 @@ class Experiment:
 			cellsCutOnCounts = self.dataset.X.shape[0]
 
 		else:
-
+			print('Filtering each batch as a single group')
 			if not genesPercentileCutoffs == [0.0,1.0]:
+				print('cutting based on gene percentiles')
 				sc.pp.filter_cells(self.dataset, min_genes=0)
 			
 				minGeneCut = self.dataset.obs.n_genes.quantile(q=genesPercentileCutoffs[0])
@@ -84,6 +92,7 @@ class Experiment:
 				sc.pp.filter_cells(self.dataset, max_genes=maxGeneCut)
 
 			if not countsPercentileCutoffs == [0.0,1.0]:
+				print('cutting based on count percentiles')
 				self.dataset.obs['n_counts'] = self.dataset.X.sum(1)
 
 				minCountsCut = self.dataset.obs.n_counts.quantile(q=countsPercentileCutoffs[0])
