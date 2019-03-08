@@ -3,7 +3,7 @@ import os
 
 
 #Example usage:
-# python Python_code/MERCluster/MERCluster/utils/config_writer.py -configFilePath /n/home13/seichhorn/temp/configTest.json -environment scanpy -MERClusterLocation /n/home13/seichhorn/Python_code/MERCluster -rawDataPath /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/raw_data/combined_data_geneNames_180912.h5ad -outputName combined_data_geneName_180912 -numberOfRounds 2 -outputDirs /n/home13/seichhorn/temp/round1 /n/home13/seichhorn/temp/round2 -analysisDirs /n/home13/seichhorn/temp/round1/analysis/ /n/home13/seichhorn/temp/round2/analysis/ -filterByBatch True False -countsCutoffMinMax 0.01 0.99 0.0 1.0 -kValues 4 6 8 10 12 15 20 0 8 10 12 -bootStrapIterations 20 -geneSets Set1,Set2 Set3,Set4 -geneIdentityFile /n/home13/seichhorn/test.txt -resolution 1 0 1 2 3 4 -cellTypes Astrocytes,Neurons,Oligodendrocytes
+# /n/home13/seichhorn/.conda/envs/scanpy/ Python_code/MERCluster/MERCluster/utils/config_writer.py -configFilePath /n/home13/seichhorn/test.json -environment scanpy -rawDataPath /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/raw_data/combined_data_geneNames_180912.h5ad -outputName combined_data_geneNames_180912 -outputDirs /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190228/Round1/ -analysisDirs /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190228/Round1/analysis/ -filterByBatch True -countsCutoffMinMax 0.01 0.99 -kValues 4 6 8 10 12 15 20 25 30 -bootStrapIterations 20 -bootStrapFrac 0.8 -resolution 1 -clusteringFlavor leiden -geneSets /n/home13/seichhorn/set1.csv,/n/home13/seichhorn/set2.csv -cellTypes All -restriction None -MERClusterLocation /n/home13/seichhorn/Python_code/MERCluster/
 
 def parse_args():
 	parser = argparse.ArgumentParser(description = 'write a config file for snakemake clustering')
@@ -77,6 +77,10 @@ def write_config():
 		geneSetsExpanded = []
 		for element in geneSets:
 			geneSetsExpanded.append(element.split(','))
+
+		geneSetNames = [[''.join(os.path.splitext(os.path.basename(y))[0].split('_')) for y in x] for x in geneSetsExpanded]
+
+
 	if args.geneIdentityFile:
 		if len(args.geneIdentityFile)>1:
 			geneIdentityFiles = args.geneIdentityFile
@@ -160,10 +164,10 @@ def write_config():
 
 			if args.geneSets:
 				configOpen.write('\t\t\"geneSets\" :\n')
-				configOpen.write('\t\t[\n')
+				configOpen.write('\t\t{\n')
 
-				[configOpen.write('\t\t\t\"{}\"\n'.format(x)) if x == x in geneSetsExpanded[-1] else configOpen.write('\t\t\t\"{}\",\n'.format(x)) for x in geneSetsExpanded[clusterRound]]
-				configOpen.write('\t\t],\n')
+				[configOpen.write('\t\t\t\"{}\" : \"{}\"\n'.format(geneSetNames[clusterRound][x],geneSetsExpanded[clusterRound][x])) if x == list(range(len(geneSetsExpanded[clusterRound])))[-1] else configOpen.write('\t\t\t\"{}\" : \"{}\",\n'.format(geneSetNames[clusterRound][x],geneSetsExpanded[clusterRound][x])) for x in list(range(len(geneSetsExpanded[clusterRound])))]
+				configOpen.write('\t\t},\n')
 
 			if args.geneIdentityFile:
 				configOpen.write('\t\t\"geneIdentityFile\" : \"{}\",\n'.format(geneIdentityFiles[clusterRound]))

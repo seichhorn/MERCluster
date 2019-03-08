@@ -2,6 +2,7 @@
 #Author: Stephen Eichhorn
 #Email: stephen_eichhorn@fas.harvard.edu
 #Version = 1.1
+import os
 
 #location for python, primarily for running a python from a conda env
 pythonPath = config['Paths']['pythonDir']
@@ -14,11 +15,10 @@ rawData = config['Paths']['rawData']
 
 # #Parameters for clustering
 bootStrapIterations = list(range(int(config['Round1']['bootStrapIterations'])))
-# rawDataPath = config['Paths']['rawDataPath']
-
+geneSetNamesList = [k for k,v in list(config['Round1']['geneSets'].items())]
 
 rule all:
-	input: config['Round1']['Paths']['analysisDir'] + 'cellTypes.txt'
+	input: expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_analysis_geneset_{geneSet}.txt', geneSet = geneSetNamesList)
 
 
 rule full_clustering:
@@ -26,7 +26,7 @@ rule full_clustering:
 		rawData
 
 	wildcard_constraints:
-		geneSet = '|'.join(config['Round1']['geneSets'])
+		geneSet = '|'.join(geneSetNamesList)
  
 	output:
 		fullOutput = expand(config['Round1']['Paths']['outputDir'] + 'clustering/kValue_{{kValue}}_resolution_{resolution}_type_{{cellType}}_geneset_{{geneSet}}.txt', resolution = config['Round1']['resolution']), 
@@ -36,14 +36,14 @@ rule full_clustering:
 		byBatch = config['Round1']['Filters']['byBatch'],
 		countsCutoffMin = config['Round1']['Filters']['countsCutoffMin'],
 		countsCutoffMax = config['Round1']['Filters']['countsCutoffMax'],
-		geneSet = config['Round1']['geneSets'],
+		geneSetPath = lambda w: config['Round1']['geneSets']["{}".format(w.geneSet)],
 		outputDir = config['Round1']['Paths']['outputDir'],
 		clusteringFlavor = config['Round1']['clusteringFlavor'],
 		resolution = config['Round1']['resolution']
 
 
 	shell:
-		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSet} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor}"
+		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor}"
 
 
 rule bootstrap_clustering:
@@ -58,23 +58,22 @@ rule bootstrap_clustering:
 		byBatch = config['Round1']['Filters']['byBatch'],
 		countsCutoffMin = config['Round1']['Filters']['countsCutoffMin'],
 		countsCutoffMax = config['Round1']['Filters']['countsCutoffMax'],
-		geneSet = config['Round1']['geneSets'],
+		geneSetPath = lambda w: config['Round1']['geneSets']["{}".format(w.geneSet)],
 		outputDir = config['Round1']['Paths']['outputDir'],
 		clusteringFlavor = config['Round1']['clusteringFlavor'],
 		bootstrapFrac = config['Round1']['bootstrapFrac'],
 		resolution = config['Round1']['resolution']
 
 	shell:
-		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSet} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -bootstrapFrac {params.bootstrapFrac}"
+		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -bootstrapFrac {params.bootstrapFrac}"
 
 rule select_kValue_R1:
 	output:
-		config['Round1']['Paths']['analysisDir'] + 'cellTypes.txt',
-		# config['Round1']['Paths']['analysisDir'] + 'stability_analysis.txt'
+		expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_analysis_geneset_{geneSet}.txt', geneSet = geneSetNamesList)
 
 	input:
-		lambda wildcards: expand(config['Round1']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{cellType}_geneset_{geneSet}.txt', kValue = config['Round1']['kValues'], resolution = config['Round1']['resolution'], geneSet = config['Round1']['geneSets'], cellType = config['Round1']['cellTypes']),
-		lambda wildcards: expand(config['Round1']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{cellType}_geneset_{geneSet}_bootstrap_{bootstrap}.txt', kValue = config['Round1']['kValues'], resolution = config['Round1']['resolution'], geneSet = config['Round1']['geneSets'], cellType = config['Round1']['cellTypes'], bootstrap = bootStrapIterations)
+		lambda wildcards: expand(config['Round1']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{cellType}_geneset_{geneSet}.txt', kValue = config['Round1']['kValues'], resolution = config['Round1']['resolution'], cellType = config['Round1']['cellTypes'], geneSet = geneSetNamesList),
+		lambda wildcards: expand(config['Round1']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{cellType}_geneset_{geneSet}_bootstrap_{bootstrap}.txt', kValue = config['Round1']['kValues'], resolution = config['Round1']['resolution'], cellType = config['Round1']['cellTypes'], geneSet = geneSetNamesList, bootstrap = bootStrapIterations)
 
 	params:
 		inputDir = config['Round1']['Paths']['outputDir'] + 'clustering/',
