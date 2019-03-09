@@ -53,12 +53,10 @@ def minimum_cluster_size(communities, min_size = 10):
 	return communities
 
 
-def shuffler(df):
-    npTemp = df.values
-#     idx = np.random.rand(*npTemp.shape).argsort(0)
-    idx = [np.random.choice(npTemp.shape[0], npTemp.shape[0], replace=False) for x in range(npTemp.shape[1])]
+def shuffler(matrix):
+    idx = [np.random.choice(matrix.shape[0], matrix.shape[0], replace=False) for x in range(matrix.shape[1])]
     
-    holding = npTemp[np.array(idx).T, np.arange(npTemp.shape[1])]
+    holding = matrix[np.array(idx).T, np.arange(matrix.shape[1])]
     return holding
 
 

@@ -4,6 +4,7 @@ import pandas as pd
 from MERCluster.utils import scanpy_helpers
 import numpy as np
 import os
+import sklearn
 
 sc.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hints (3)
 sc.settings.set_figure_params(dpi=150)  # low dpi (dots per inch) yields small inline figures
@@ -170,19 +171,18 @@ class Experiment:
 		sc.pp.scale(self.dataset, max_value= zscoreMax)
 
 	def selectPCs(self):
+		print('computing pcs')
 		maxPCs = int(np.min(self.dataset.X.shape)) - 1
-		if maxPCs < 200:
+		if maxPCs < 100:
 			pcsToCalc = maxPCs
 		else:
-			pcsToCalc = 200
+			pcsToCalc = 100
 		sc.tl.pca(self.dataset, svd_solver = 'arpack', n_comps = pcsToCalc)
 
 		#Shuffling the dataframe 10 times, each time calculate the PCs and take the variance explained of the first PC.
-		randomVariance = []
-		for i in range(10):
-			shuffled = sc.AnnData(scanpy_helpers.shuffler(pd.DataFrame(self.dataset.X)))
-			sc.tl.pca(shuffled, svd_solver = 'arpack', n_comps = pcsToCalc)
-			randomVariance.append(shuffled.uns['pca']['variance'][0])
+		
+		randomPCs = sklearn.decomposition.PCA(n_components=1, svd_solver = 'arpack')
+		randomVariance = [randomPCs.fit(scanpy_helpers.shuffler(self.dataset.X)).explained_variance_[0] for _ in range(10)]
 
 		#Use only PCs that explain more variance than the random dataframe
 		pcsToUse = len(self.dataset.uns['pca']['variance'][self.dataset.uns['pca']['variance']>np.median(randomVariance)])
