@@ -22,6 +22,7 @@ def jaccard_kernel(sparseConnectivites):
 		j.extend(sparseConnectivites[i].indices)
 	return r, j, s
 
+
 def neighbor_graph(kernel,connectivities, directed = False, prune = False):
 	r,j,s = kernel(connectivities)
 	graph = sp.coo_matrix((s, (r, j)),shape = (connectivities.shape[0],connectivities.shape[0]))

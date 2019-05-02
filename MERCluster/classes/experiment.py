@@ -27,8 +27,14 @@ class Experiment:
 	'''
 	def __init__(self, dataset, output):
 		if type(dataset) == str:
-			self.dataset = sc.read_h5ad(dataset)
-			self.dataset.var_names_make_unique()
+			if dataset.split('.')[-1] == 'csv':
+				self.dataset = sc.read_csv(dataset)
+				self.dataset.var_names_make_unique()
+			elif dataset.split('.')[-1] == 'h5ad':
+				self.dataset = sc.read_h5ad(dataset)
+				self.dataset.var_names_make_unique()
+			else:
+				print('file extension not supported, please use csv or h5ad')
 		else:
 			self.dataset = dataset.copy()
 			self.dataset.var_names_make_unique()
@@ -39,7 +45,6 @@ class Experiment:
 		except:
 			pass
 		self.bootStrap = False
-
 
 	def save(self,outputFile = 'file.h5ad'):
 		if outputFile[-4:] != 'h5ad':
@@ -198,9 +203,16 @@ class Experiment:
 
 		self.dataset.uns['neighbors']['connectivities'] = scanpy_helpers.neighbor_graph(scanpy_helpers.jaccard_kernel,self.dataset.uns['neighbors']['connectivities'])
 
-	def cluster(self, resolution=[1.0], clusterMin=10, trackIterations=False, clusteringAlgorithm='louvain'):
+	def cluster(self, resolution=[1.0], clusterMin=10, trackIterations=False, clusteringAlgorithm='louvain', preselectedGenesFile='highVar'):
 
 		self.resolution = resolution
+
+		if preselectedGenesFile == 'highVar':
+			self.geneSelection = preselectedGenesFile
+		else:
+			self.geneSelection = ''.join(os.path.splitext(os.path.basename(preselectedGenesFile))[0].split('_'))
+
+
 		pathToOutput = '{}clustering/'.format(self.output)
 		if not os.path.exists(pathToOutput):
 			os.makedirs(pathToOutput)

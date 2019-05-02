@@ -27,6 +27,7 @@ def parse_args():
 	parser.add_argument('-trackIterations', default = True, type = bool, help = 'whether to track intermediate clustering results')
 	parser.add_argument('-clusteringAlgorithm', default = 'louvain', type = str, help = 'algorithm to use for modularity optimization, louvain or leiden')
 	parser.add_argument('-fileNameIteration', default = 'None', type = str, help = 'variable to allow appending numbers to file names for bootstrapping iterations')
+	parser.add_argument('-merfish', default = 'False', type = str, help = 'flag to designate data as coming from a MERFISH experiment, if you set this flag I assume you are giving an h5ad object constructed using area-normalized, logged data')
 	args = parser.parse_args()
 
 	return args
@@ -34,25 +35,38 @@ def parse_args():
 def cluster():
 	args = parse_args()
 
-	ex1 = experiment.Experiment(args.dataFile, args.outputLocation)
-	ex1.filter(verbose = args.verbose, byBatch = args.byBatch, countsPercentileCutoffs = list(args.countsPercentileCutoffs),genesPercentileCutoffs = list(args.genesPercentileCutoffs), mitoPercentileMax = args.mitoPercentileMax, geneMin = args.geneMin)
+	merfish = args.merfish.upper() == 'TRUE'
 
-	if args.pathToCellTypes:
-		ex1.cutToCellList(args.pathToCellTypes, args.pathToCellLabels, args.cellType, args.restriction)
+	if merfish:
+		import scanpy.api as sc
+		ex1 = experiment.Experiment(args.dataFile, args.outputLocation)
 
-	if args.bootstrapFrac < 1.0:
-		ex1.bootstrapCells(args.fileNameIteration, frac = args.bootstrapFrac)
+		if args.pathToCellTypes:
+			ex1.cutToCellList(args.pathToCellTypes, args.pathToCellLabels, args.cellType, args.restriction)
 
-	ex1.selectVariableGenes(preselectedGenesFile = args.preselectedGenesFile, dispersionMin = args.dispersionMinMaxThreshold[0], dispersionMax = args.dispersionMinMaxThreshold[1], dispersionThreshold = args.dispersionMinMaxThreshold[2])
-	ex1.processData(regressOut=args.regressOut)
+		if args.bootstrapFrac < 1.0:
+			ex1.bootstrapCells(args.fileNameIteration, frac = args.bootstrapFrac)
+
+		sc.pp.scale(ex1.dataset, max_value= 4)
+
+
+	else:
+		ex1 = experiment.Experiment(args.dataFile, args.outputLocation)
+		ex1.filter(verbose = args.verbose, byBatch = args.byBatch, countsPercentileCutoffs = list(args.countsPercentileCutoffs),genesPercentileCutoffs = list(args.genesPercentileCutoffs), mitoPercentileMax = args.mitoPercentileMax, geneMin = args.geneMin)
+
+		if args.pathToCellTypes:
+			ex1.cutToCellList(args.pathToCellTypes, args.pathToCellLabels, args.cellType, args.restriction)
+
+		if args.bootstrapFrac < 1.0:
+			ex1.bootstrapCells(args.fileNameIteration, frac = args.bootstrapFrac)
+
+		ex1.selectVariableGenes(preselectedGenesFile = args.preselectedGenesFile, dispersionMin = args.dispersionMinMaxThreshold[0], dispersionMax = args.dispersionMinMaxThreshold[1], dispersionThreshold = args.dispersionMinMaxThreshold[2])
+		ex1.processData(regressOut=args.regressOut)
+		
 	if args.usePCA:
 		ex1.selectPCs()
 	ex1.computeNeighbors(kValue=args.kValue, usePCA=args.usePCA)
-	ex1.cluster(resolution=args.resolution, clusterMin=args.clusterMin, trackIterations=args.trackIterations, clusteringAlgorithm=args.clusteringAlgorithm)
-
-
-
-
+	ex1.cluster(resolution=args.resolution, clusterMin=args.clusterMin, trackIterations=args.trackIterations, clusteringAlgorithm=args.clusteringAlgorithm, preselectedGenesFile = args.preselectedGenesFile)
 
 
 if __name__ == '__main__':

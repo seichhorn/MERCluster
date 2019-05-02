@@ -1,0 +1,9 @@
+{
+	"database" : "pubmed",
+	"startYear" : 2009,
+	"stopYear" : 2019,
+	"journals" :
+	[
+		"Neurons"
+	]
+}

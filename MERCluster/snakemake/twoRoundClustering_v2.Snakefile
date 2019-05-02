@@ -42,11 +42,12 @@ rule full_clustering:
 		geneSetPath = lambda w: config['Round1']['geneSets']["{}".format(w.geneSet)],
 		outputDir = config['Round1']['Paths']['outputDir'],
 		clusteringFlavor = config['Round1']['clusteringFlavor'],
+		merfish = config['Round1']['merfish'],
 		resolution = config['Round1']['resolution']
 
 
 	shell:
-		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor}"
+		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -merfish {params.merfish}"
 
 
 rule bootstrap_clustering:
@@ -65,15 +66,16 @@ rule bootstrap_clustering:
 		outputDir = config['Round1']['Paths']['outputDir'],
 		clusteringFlavor = config['Round1']['clusteringFlavor'],
 		bootstrapFrac = config['Round1']['bootstrapFrac'],
+		merfish = config['Round1']['merfish'],
 		resolution = config['Round1']['resolution']
 
 	shell:
-		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -bootstrapFrac {params.bootstrapFrac}"
+		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -bootstrapFrac {params.bootstrapFrac} -merfish {params.merfish}"
 
 rule select_kValue_R1:
 	output:
-		expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_8_resolution_1_type_All_geneset_{geneSet}.txt', geneSet = geneSetNamesList1),
-		expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_8_resolution_1_type_All_geneset_{geneSet}.txt", geneSet = geneSetNamesList1)
+		expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_10_resolution_1_type_All_geneset_{geneSet}.txt', geneSet = geneSetNamesList1),
+		expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_10_resolution_1_type_All_geneset_{geneSet}.txt", geneSet = geneSetNamesList1)
 
 	input:
 		lambda wildcards: expand(config['Round1']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{cellType}_geneset_{geneSet}.txt', kValue = config['Round1']['kValues'], resolution = config['Round1']['resolution'], cellType = config['Round1']['cellTypes'], geneSet = geneSetNamesList1),
@@ -92,13 +94,13 @@ rule select_kValue_R1:
 rule subclustering:
 	wildcard_constraints:
 		cellType = '|'.join(subclusterTypes),
-		geneSet1 = '|'.join(geneSetNamesList1)
+		geneSet1 = '|'.join(geneSetNamesList1),
 		geneSet2 = '|'.join(geneSetNamesList2)
 
 	input:
 		experimentData = rawData,
-		cellTypes = config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_8_resolution_1_type_All_geneset_{geneSet1}.txt',
-		cellLabels = config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_8_resolution_1_type_All_geneset_{geneSet1}.txt"
+		cellTypes = expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_10_resolution_1_type_All_geneset_{geneSet1}.txt', geneSet1 = geneSetNamesList1),
+		cellLabels = expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_10_resolution_1_type_All_geneset_{geneSet1}.txt", geneSet1 = geneSetNamesList1)
 
 
 	output:
@@ -112,23 +114,24 @@ rule subclustering:
 		geneSetPath = lambda w: config['Round2']['geneSets']["{}".format(w.geneSet2)],
 		outputDir = config['Round2']['Paths']['outputDir'],
 		clusteringFlavor = config['Round2']['clusteringFlavor'],
+		merfish = config['Round1']['merfish'],
 		resolution = config['Round2']['resolution'],
 		restriction = lambda w: config['Round2']['restrictions']["{}".format(w.cellType)]
 
 	shell:
-		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input.experimentData} {params.outputDir} -pathToCellTypes {input.cellTypes} -pathToCellLabels {input.cellLabels} -cellType {wildcards.cellType} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -restriction {params.restriction}"
+		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input.experimentData} {params.outputDir} -pathToCellTypes {input.cellTypes} -pathToCellLabels {input.cellLabels} -cellType {wildcards.cellType} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -restriction {params.restriction} -merfish {params.merfish}"
 
 
 rule subbootstrap_clustering:
 	wildcard_constraints:
 		cellType = '|'.join(subclusterTypes),
-		geneSet1 = '|'.join(geneSetNamesList1)
+		geneSet1 = '|'.join(geneSetNamesList1),
 		geneSet2 = '|'.join(geneSetNamesList2)
 
 	input:
 		experimentData = rawData,
-		cellTypes = config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_8_resolution_1_type_All_geneset_{geneSet1}.txt',
-		cellLabels = config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_8_resolution_1_type_All_geneset_{geneSet1}.txt"
+		cellTypes = expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_10_resolution_1_type_All_geneset_{geneSet1}.txt', geneSet1 = geneSetNamesList1),
+		cellLabels = expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_10_resolution_1_type_All_geneset_{geneSet1}.txt", geneSet1 = geneSetNamesList1)
 
 	output:
 		fullOutput = expand(config['Round2']['Paths']['outputDir'] + 'clustering/kValue_{{kValue}}_resolution_{resolution}_type_{{cellType}}_geneset_{{geneSet2}}_bootstrap_{{bootstrap}}.txt', resolution = config['Round2']['resolution']), 
@@ -142,12 +145,13 @@ rule subbootstrap_clustering:
 		outputDir = config['Round2']['Paths']['outputDir'],
 		clusteringFlavor = config['Round2']['clusteringFlavor'],
 		bootstrapFrac = config['Round2']['bootstrapFrac'],
+		merfish = config['Round1']['merfish'],
 		resolution = config['Round2']['resolution'],
 		restriction = lambda wildcards: config['Round2']['restrictions']['{}'.format(wildcards.cellType)]
 
 
 	shell:
-		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input.experimentData} {params.outputDir} -pathToCellTypes {input.cellTypes} -pathToCellLabels {input.cellLabels} -cellType {wildcards.cellType} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -restriction {params.restriction} -bootstrapFrac {params.bootstrapFrac}"
+		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input.experimentData} {params.outputDir} -pathToCellTypes {input.cellTypes} -pathToCellLabels {input.cellLabels} -cellType {wildcards.cellType} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -restriction {params.restriction} -bootstrapFrac {params.bootstrapFrac} -merfish {params.merfish}"
 
 
 rule select_kValue_R2:

@@ -3,7 +3,7 @@ import os
 
 
 #Example usage:
-# /n/home13/seichhorn/.conda/envs/scanpy/ Python_code/MERCluster/MERCluster/utils/config_writer.py -configFilePath /n/home13/seichhorn/test.json -environment scanpy -rawDataPath /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/raw_data/combined_data_geneNames_180912.h5ad -outputName combined_data_geneNames_180912 -outputDirs /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190228/Round1/ -analysisDirs /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190228/Round1/analysis/ -filterByBatch True -countsCutoffMinMax 0.01 0.99 -kValues 4 6 8 10 12 15 20 25 30 -bootStrapIterations 20 -bootStrapFrac 0.8 -resolution 1 -clusteringFlavor leiden -geneSets /n/home13/seichhorn/set1.csv,/n/home13/seichhorn/set2.csv -cellTypes All -restriction None -MERClusterLocation /n/home13/seichhorn/Python_code/MERCluster/
+# /n/home13/seichhorn/.conda/envs/scanpy/bin/python Python_code/MERCluster/MERCluster/utils/config_writer.py -configFilePath /n/home13/seichhorn/test.json -environment scanpy -rawDataPath /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/raw_data/combined_data_geneNames_180912.h5ad -outputName combined_data_geneNames_180912 -outputDirs /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190228/Round1/ -analysisDirs /n/boslfs/LABS/zhuang_lab/User/seichhorn/Hypothalamus/SN-seq_180912/190228/Round1/analysis/ -filterByBatch True -countsCutoffMinMax 0.01 0.99 -kValues 4 6 8 10 12 15 20 25 30 -bootStrapIterations 20 -bootStrapFrac 0.8 -resolution 1 -clusteringFlavor leiden -geneSets /n/home13/seichhorn/set1.csv,/n/home13/seichhorn/set2.csv -cellTypes All -restriction None -MERClusterLocation /n/home13/seichhorn/Python_code/MERCluster/
 
 def parse_args():
 	parser = argparse.ArgumentParser(description = 'write a config file for snakemake clustering')
@@ -17,6 +17,8 @@ def parse_args():
 	parser.add_argument('-numberOfRounds', default = 1, type = int, help = 'number of rounds of clustering to perform, counting is one-base')
 	parser.add_argument('-outputDirs', nargs = '+', type = str, help = 'path for writing output of each round of clustering, supplied as a space separated list of paths ordered with the output for the first round first, second round second, etc')
 	parser.add_argument('-analysisDirs', nargs = '+', type = str, help = 'path for writing analysis results for each round of clustering, supplied as a space separated list of paths ordered with the output for the first round first, second round second, etc')
+	
+	parser.add_argument('-merfish', default = 'False', type = str, help = 'flag to designate data as coming from a MERFISH experiment')
 
 	parser.add_argument('-filterByBatch', nargs = '+', type = str, help = 'True or False with whether to filter datasets based on an observation named batch, enter a value separated by a space for each round of clustering')
 	parser.add_argument('-countsCutoffMinMax', nargs = '+', type = float, help = 'Quantiles to use to filter out cells with low or high counts, e.g. 0.01 0.99, if you have multiple rounds enter a value for each round as min max pairs, e.g. 0.1 0.99 0.0 1.0 for two rounds, filtering out the top and bottom 1 percent of cells in the first round and no additional filtering applied in the second round')
@@ -28,7 +30,7 @@ def parse_args():
 	parser.add_argument('-geneIdentityFile', nargs = '+', type = str, help = 'path to file containing genes to identify cell types, if you supply one file it will be used for all rounds, otherwise supply two paths separated by a space')
 	parser.add_argument('-resolution', nargs = '+', type = int, help = 'resolution values to use for each round of clustering, if you want to use a different set of values for your different rounds enter a 0 separating each list, e.g. 1 0 1 2 3 4, would run 1 for the first round and 1, 2, 3, and 4 for the second round')    
 	parser.add_argument('-clusteringFlavor', nargs = '+', type = str, help = 'space separated list of louvain or leiden based on algorithm you want to use for clustering')    
-	
+
 	parser.add_argument('-cellTypes', nargs = '+', type = str, help = 'Names of cell types to select and recluster in round 2+ of clustering, supply as a comma separated list for cell types to target in a particular round, put a space between comma separated lists to indicate the types for different rounds')    
 	parser.add_argument('-restriction', nargs = '+', type = str, help = 'Whether to use a strict or permissive cell type definition for cell types to select, given in the same order as cell types, if cell types is all then restrictions isnt relevant but still should be assigned')    
 
@@ -68,6 +70,7 @@ def write_config():
 	countsCutoffMins = [args.countsCutoffMinMax[x] for x in range(len(args.countsCutoffMinMax)) if x%2 == 0] 
 	countsCutoffMaxs = [args.countsCutoffMinMax[x] for x in range(len(args.countsCutoffMinMax)) if x%2 == 1] 
 	clusteringFlavor = args.clusteringFlavor
+	merfish = args.merfish
 	if args.geneSets:
 		if len(args.geneSets) > 1:
 			geneSets = args.geneSets
@@ -185,7 +188,7 @@ def write_config():
 			configOpen.write('\t\t},\n')				
 
 			configOpen.write('\t\t\"clusteringFlavor\" : \"{}\",\n'.format(clusteringFlavor[clusterRound-1]))
-
+			configOpen.write('\t\t\"merfish\" : \"{}\",\n'.format(merfish))
 			configOpen.write('\t\t\"resolution\" :\n')
 			configOpen.write('\t\t[\n')
 
