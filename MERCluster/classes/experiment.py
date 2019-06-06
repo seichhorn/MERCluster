@@ -25,7 +25,7 @@ class Experiment:
 	bootstrapCells - subsamples the dataset
 
 	'''
-	def __init__(self, dataset, output):
+	def __init__(self, dataset, output, cellType = 'All'):
 		if type(dataset) == str:
 			if dataset.split('.')[-1] == 'csv':
 				self.dataset = sc.read_csv(dataset)
@@ -39,7 +39,7 @@ class Experiment:
 			self.dataset = dataset.copy()
 			self.dataset.var_names_make_unique()
 		self.output = output
-		self.cellType = 'All'
+		self.cellType = cellType
 		try:
 			self.pcsToUse = self.dataset.uns['selected_pcs']
 		except:
