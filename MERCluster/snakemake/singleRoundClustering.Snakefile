@@ -40,7 +40,7 @@ rule full_clustering:
 		outputDir = config['Round1']['Paths']['outputDir'],
 		clusteringFlavor = config['Round1']['clusteringFlavor'],
 		merfish = config['Round1']['merfish'],
-		resolution = config['Round1']['resolution']
+		resolution = config['Round1']['resolution'],
 		cellType = config['Round1']['cellType']
 
 	shell:
@@ -64,7 +64,7 @@ rule bootstrap_clustering:
 		clusteringFlavor = config['Round1']['clusteringFlavor'],
 		bootstrapFrac = config['Round1']['bootstrapFrac'],
 		merfish = config['Round1']['merfish'],
-		resolution = config['Round1']['resolution']
+		resolution = config['Round1']['resolution'],
 		cellType = config['Round1']['cellType']
 
 	shell:
