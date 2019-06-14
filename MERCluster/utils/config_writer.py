@@ -31,7 +31,7 @@ def parse_args():
 	parser.add_argument('-resolution', nargs = '+', type = int, help = 'resolution values to use for each round of clustering, if you want to use a different set of values for your different rounds enter a 0 separating each list, e.g. 1 0 1 2 3 4, would run 1 for the first round and 1, 2, 3, and 4 for the second round')    
 	parser.add_argument('-clusteringFlavor', nargs = '+', type = str, help = 'space separated list of louvain or leiden based on algorithm you want to use for clustering')    
 
-	parser.add_argument('-cellTypes', nargs = '+', type = str, help = 'Names of cell types to select and recluster in round 2+ of clustering, supply as a comma separated list for cell types to target in a particular round, put a space between comma separated lists to indicate the types for different rounds')    
+	parser.add_argument('-cellTypes', nargs = '+', type = str, help = 'Names of cell types to use in clustering, supply as a comma separated list for cell types to target in a particular round, put a space between comma separated lists to indicate the types for different rounds')    
 	parser.add_argument('-restriction', nargs = '+', type = str, help = 'Whether to use a strict or permissive cell type definition for cell types to select, given in the same order as cell types, if cell types is all then restrictions isnt relevant but still should be assigned')    
 
 	args = parser.parse_args()

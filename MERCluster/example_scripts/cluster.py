@@ -36,10 +36,13 @@ def cluster():
 	args = parse_args()
 
 	merfish = args.merfish.upper() == 'TRUE'
+	if args.cellType:
+		ex1 = experiment.Experiment(args.dataFile, args.outputLocation, cellType = args.cellType)
+	else:
+		ex1 = experiment.Experiment(args.dataFile, args.outputLocation)		
 
 	if merfish:
 		import scanpy.api as sc
-		ex1 = experiment.Experiment(args.dataFile, args.outputLocation, cellType = args.cellType)
 
 		if args.pathToCellTypes:
 			ex1.cutToCellList(args.pathToCellTypes, args.pathToCellLabels, args.cellType, args.restriction)
@@ -51,7 +54,6 @@ def cluster():
 
 
 	else:
-		ex1 = experiment.Experiment(args.dataFile, args.outputLocation, cellType = args.cellType)
 		ex1.filter(verbose = args.verbose, byBatch = args.byBatch, countsPercentileCutoffs = list(args.countsPercentileCutoffs),genesPercentileCutoffs = list(args.genesPercentileCutoffs), mitoPercentileMax = args.mitoPercentileMax, geneMin = args.geneMin)
 
 		if args.pathToCellTypes:
