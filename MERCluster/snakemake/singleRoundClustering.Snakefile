@@ -41,7 +41,7 @@ rule full_clustering:
 		clusteringFlavor = config['Round1']['clusteringFlavor'],
 		merfish = config['Round1']['merfish'],
 		resolution = config['Round1']['resolution'],
-		cellType = config['Round1']['cellType']
+		cellType = config['Round1']['cellTypes']
 
 	shell:
 		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -cellType {params.cellType} -merfish {params.merfish}"
@@ -65,7 +65,7 @@ rule bootstrap_clustering:
 		bootstrapFrac = config['Round1']['bootstrapFrac'],
 		merfish = config['Round1']['merfish'],
 		resolution = config['Round1']['resolution'],
-		cellType = config['Round1']['cellType']
+		cellType = config['Round1']['cellTypes']
 
 	shell:
 		pythonPath+" "+codePath+"MERCluster/example_scripts/cluster.py {input} {params.outputDir} -byBatch {params.byBatch} -countsPercentileCutoffs {params.countsCutoffMin} {params.countsCutoffMax} -preselectedGenesFile {params.geneSetPath} -fileNameIteration {wildcards.bootstrap} -kValue {wildcards.kValue} -resolution {params.resolution} -clusteringAlgorithm {params.clusteringFlavor} -bootstrapFrac {params.bootstrapFrac} -cellType {params.cellType} -merfish {params.merfish}"
