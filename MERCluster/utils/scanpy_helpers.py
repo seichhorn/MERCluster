@@ -6,9 +6,9 @@ import pandas as pd
 
 def jaccard_kernel(sparseConnectivites):
 	"""
+	This function is directly copied from https://github.com/jacoblevine/PhenoGraph
+
 	Compute Jaccard coefficient between nearest-neighbor sets
-	:param idx: numpy array of nearest-neighbor indices
-	:return (i, j, s): tuple of indices and jaccard coefficients, suitable for constructing COO matrix
 	"""
 	n = sparseConnectivites.shape[0]
 	s = list()
@@ -22,8 +22,13 @@ def jaccard_kernel(sparseConnectivites):
 		j.extend(sparseConnectivites[i].indices)
 	return r, j, s
 
-
 def neighbor_graph(kernel,connectivities, directed = False, prune = False):
+	"""
+	This function is directly copied from https://github.com/jacoblevine/PhenoGraph
+
+	Compute neighbor graph based on supplied kernel and connectivities
+	"""
+
 	r,j,s = kernel(connectivities)
 	graph = sp.coo_matrix((s, (r, j)),shape = (connectivities.shape[0],connectivities.shape[0]))
 
@@ -44,12 +49,12 @@ def minimum_cluster_size(communities, min_size = 10):
 	Takes a pandas dataframe with cells as the index, and cluster identifier as the column, and removes
 	all clusters smaller than minimum size
 	'''
-	communities.columns = ['louvain']
-	communitiesGrouped = communities.groupby('louvain').size()
+	communities.columns = ['clusters']
+	communitiesGrouped = communities.groupby('clusters').size()
 
 	toZero = communitiesGrouped[communitiesGrouped<int(min_size)].index.values.tolist()
-	mask = communities['louvain'].isin(toZero)
-	communities['louvain'] = communities['louvain'].where(~mask,other = -1)
+	mask = communities['clusters'].isin(toZero)
+	communities['clusters'] = communities['clusters'].where(~mask,other = -1)
 
 	return communities
 

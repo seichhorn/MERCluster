@@ -76,8 +76,8 @@ rule bootstrap_clustering:
 
 rule select_kValue_R1:
 	output:
-		expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_10_resolution_1_type_All_geneset_{geneSet}.txt', geneSet = geneSetNamesList1),
-		expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_10_resolution_1_type_All_geneset_{geneSet}.txt", geneSet = geneSetNamesList1)
+		expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_12_resolution_1_type_Neuron_geneset_{geneSet}.txt', geneSet = geneSetNamesList1),
+		expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_12_resolution_1_type_Neuron_geneset_{geneSet}.txt", geneSet = geneSetNamesList1)
 
 	input:
 		lambda wildcards: expand(config['Round1']['Paths']['outputDir'] + 'clustering/kValue_{kValue}_resolution_{resolution}_type_{cellType}_geneset_{geneSet}.txt', kValue = config['Round1']['kValues'], resolution = config['Round1']['resolution'], cellType = config['Round1']['cellTypes'], geneSet = geneSetNamesList1),
@@ -101,8 +101,8 @@ rule subclustering:
 
 	input:
 		experimentData = rawData,
-		cellTypes = expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_10_resolution_1_type_All_geneset_{geneSet1}.txt', geneSet1 = geneSetNamesList1),
-		cellLabels = expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_10_resolution_1_type_All_geneset_{geneSet1}.txt", geneSet1 = geneSetNamesList1)
+		cellTypes = expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_8_resolution_1_type_All_geneset_{geneSet1}.txt', geneSet1 = geneSetNamesList1),
+		cellLabels = expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_8_resolution_1_type_All_geneset_{geneSet1}.txt", geneSet1 = geneSetNamesList1)
 
 
 	output:
@@ -132,8 +132,8 @@ rule subbootstrap_clustering:
 
 	input:
 		experimentData = rawData,
-		cellTypes = expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_10_resolution_1_type_All_geneset_{geneSet1}.txt', geneSet1 = geneSetNamesList1),
-		cellLabels = expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_10_resolution_1_type_All_geneset_{geneSet1}.txt", geneSet1 = geneSetNamesList1)
+		cellTypes = expand(config['Round1']['Paths']['analysisDir'] + 'cellTypes_kValue_8_resolution_1_type_All_geneset_{geneSet1}.txt', geneSet1 = geneSetNamesList1),
+		cellLabels = expand(config['Round1']['Paths']['analysisDir'] +"selected_stability_analysis_kValue_8_resolution_1_type_All_geneset_{geneSet1}.txt", geneSet1 = geneSetNamesList1)
 
 	output:
 		fullOutput = expand(config['Round2']['Paths']['outputDir'] + 'clustering/kValue_{{kValue}}_resolution_{resolution}_type_{{cellType}}_geneset_{{geneSet2}}_bootstrap_{{bootstrap}}.txt', resolution = config['Round2']['resolution']), 

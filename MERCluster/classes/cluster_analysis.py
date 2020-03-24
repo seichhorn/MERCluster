@@ -184,13 +184,13 @@ class ClusterAnalysis:
 
 		if geneIdentityFile == 'None':
 			genesForIdentification = defaultdict(list)
-			genesForIdentification['Inhibitory_neuron'] = ['Gad1','Slc32a1']
-			genesForIdentification['Excitatory_neuron'] = ['Slc17a6','Slc17a7']
-			genesForIdentification['Oligodendrocyte'] = ['Gjc3','Sgk1']
+			genesForIdentification['Inhibitory_neuron'] = ['Gad1']
+			genesForIdentification['Excitatory_neuron'] = ['Slc17a6']
+			genesForIdentification['Oligodendrocyte'] = ['Mbp','Ttyh2','Pdgfra']
 			genesForIdentification['Astrocyte'] = ['Aqp4','Mlc1']
-			genesForIdentification['Microglia'] = ['Selplg','Slc15a3']
-			genesForIdentification['Endothelial_cell'] = ['Fn1','Slco1a4']
-			genesForIdentification['Pericyte'] = ['Myh11','Lmod1'] 
+			genesForIdentification['Microglia'] = ['Selplg','Cd24a']
+			genesForIdentification['Endothelial_cell'] = ['Fn1']
+			genesForIdentification['Pericyte'] = ['Myh11'] 
 
 			cellTypes = ['Inhibitory_neuron','Excitatory_neuron','Oligodendrocyte','Astrocyte','Microglia','Endothelial_cell','Pericyte']
 			allGenes = [x for y in list(genesForIdentification.values()) for x in y]

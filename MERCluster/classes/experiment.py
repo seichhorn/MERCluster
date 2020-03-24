@@ -28,7 +28,7 @@ class Experiment:
 	def __init__(self, dataset, output, cellType = 'All'):
 		if type(dataset) == str:
 			if dataset.split('.')[-1] == 'csv':
-				self.dataset = sc.read_csv(dataset)
+				self.dataset = sc.read_csv(dataset, first_column_names = True)
 				self.dataset.var_names_make_unique()
 			elif dataset.split('.')[-1] == 'h5ad':
 				self.dataset = sc.read_h5ad(dataset)
