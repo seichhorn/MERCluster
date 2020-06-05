@@ -26,9 +26,11 @@ class metaDataSet:
 		self.metaDataSetName = metaDataSetName
 
 		if analysisDirectory is None:
+			self.analysisHome = MERCluster.ANALYSIS_HOME
 			self.analysisPath = os.path.join(MERCluster.ANALYSIS_HOME,
 											 self.metaDataSetName)
 		else:
+			self.analysisHome = analysisDirectory
 			self.analysisPath = os.path.join(analysisDirectory,
 											 self.metaDataSetName)
 

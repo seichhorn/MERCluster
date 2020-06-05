@@ -1,8 +1,8 @@
 import importlib
 import networkx
 
-from merlin.core import analysistask
-from merlin.core import dataset
+from mercluster.core import analysistask
+from mercluster.core import metadataset
 
 
 class SnakemakeRule(object):
@@ -22,16 +22,22 @@ class SnakemakeRule(object):
 
     def _expand_as_string(self, task, indexCount) -> str:
         return 'expand(%s, g=list(range(%i)))' % (self._add_quotes(
-            task.dataSet.analysis_done_filename(task, '{g}')),
-            indexCount)
+            task.metaDataSet.get_analysis_path(analysisTask=task,
+                                               subDir='tasks',
+                                               fileName=task.analysisName,
+                                               extension='_{g}.done')),
+                                                  indexCount)
 
     def _generate_input_names(self, task):
-        if isinstance(task, analysistask.ParallelAnalysisTask):
+        if task.fragment_count()>1:
             return self._clean_string(self._expand_as_string(
                 task, task.fragment_count()))
         else:
             return self._clean_string(self._add_quotes(
-                task.dataSet.analysis_done_filename(task)))
+                task.metaDataSet.get_analysis_path(analysisTask=task,
+                                                   subDir='tasks',
+                                                   fileName=task.analysisName,
+                                                   extension='.done')))
 
     def _generate_input(self) -> str:
         if len(self._analysisTask.get_dependencies()) > 0:
@@ -39,35 +45,31 @@ class SnakemakeRule(object):
                           analysistask.AnalysisTask):
                 inputTasks = self._analysisTask.get_dependencies()
             else:
-                inputTasks = [self._analysisTask.dataSet.load_analysis_task(x)
+                inputTasks = [self._analysisTask.metaDataSet.load_analysis_task(x)
                               for x in self._analysisTask.get_dependencies()]
             inputString = ','.join([self._generate_input_names(x)
                                     for x in inputTasks])
         else:
-            inputTasks = [self._analysisTask.dataSet.load_analysis_task(x)
-                          for x in self._analysisTask.get_dependencies()]
-            inputString = ','.join([self._generate_input_names(x)
-                                    for x in inputTasks])
-
+            inputString = ''
         return self._clean_string(inputString)
 
     def _generate_output(self) -> str:
-        if isinstance(self._analysisTask, analysistask.ParallelAnalysisTask):
-            return self._clean_string(
-                self._add_quotes(
-                    self._analysisTask.dataSet.analysis_done_filename(
-                        self._analysisTask, '{i}')))
+        if self._analysisTask.fragment_count()>1:
+            return self._clean_string(self._expand_as_string(
+                self._analysisTask, self._analysisTask.fragment_count()))
         else:
-            return self._clean_string(
-                self._add_quotes(
-                    self._analysisTask.dataSet.analysis_done_filename(
-                        self._analysisTask)))
+            return self._clean_string(self._add_quotes(
+                self._analysisTask.metaDataSet.get_analysis_path(
+                    analysisTask=self._analysisTask,
+                    subDir='tasks',
+                    fileName=self._analysisTask.analysisName,
+                    extension='.done')))
 
     def _generate_message(self) -> str:
         messageString = \
-            ''.join(['Running ', self._analysisTask.get_analysis_name()])
+            ''.join(['Running ', self._analysisTask.analysisName()])
 
-        if isinstance(self._analysisTask, analysistask.ParallelAnalysisTask):
+        if self._analysisTask.fragment_count()>1:
             messageString += ' {wildcards.i}'
 
         return self._add_quotes(messageString)
@@ -79,17 +81,14 @@ class SnakemakeRule(object):
             shellString = self._clean_string(self._pythonPath) + ' '
         shellString += '-m merlin '
         shellString += self._clean_string(
-            self._analysisTask.dataSet.dataSetName) + ' '
+            self._analysisTask.metaDataSet.metaDataSetName) + ' '
 
         shellString += ''.join(
             ['-t ', self._clean_string(self._analysisTask.analysisName),
-             ' -e \"', self._clean_string(self._analysisTask.dataSet.dataHome),
              '\"', ' -s \"',
-             self._clean_string(self._analysisTask.dataSet.analysisHome), '\"'])
-        if isinstance(self._analysisTask.dataSet, dataset.MetaMERFISHDataSet):
-            shellString += ' --dataset-class \"MetaMERFISHDataSet\"'
+             self._clean_string(self._analysisTask.metaDataSet.analysisHome), '\"'])
 
-        if isinstance(self._analysisTask, analysistask.ParallelAnalysisTask):
+        if self._analysisTask.fragment_count()>1:
             shellString += ' -i {wildcards.i}'
 
         return self._add_quotes(shellString)
@@ -109,10 +108,11 @@ class SnakemakeRule(object):
 
 class SnakefileGenerator(object):
 
-    def __init__(self, analysisParameters, dataSet: dataset.DataSet,
+    def __init__(self, analysisParameters,
+                 metaDataSet: metadataset.metaDataSet,
                  pythonPath: str=None):
         self._analysisParameters = analysisParameters
-        self._dataSet = dataSet
+        self._metaDataSet = metaDataSet
         self._pythonPath = pythonPath
 
     def _parse_parameters(self):
@@ -123,14 +123,14 @@ class SnakefileGenerator(object):
             analysisParameters = tDict.get('parameters')
             analysisName = tDict.get('analysis_name')
             newTask = analysisClass(
-                    self._dataSet, analysisParameters, analysisName)
-            if newTask.get_analysis_name() in analysisTasks:
+                    self._metaDataSet, analysisParameters, analysisName)
+            if newTask.analysisName in analysisTasks:
                 raise Exception('Analysis tasks must have unique names. ' +
-                                newTask.get_analysis_name() + ' is redundant.')
+                                newTask.analysisName + ' is redundant.')
             # TODO This should be more careful to not overwrite an existing
             # analysis task that has already been run.
-            newTask.save()
-            analysisTasks[newTask.get_analysis_name()] = newTask
+            newTask.saveTask()
+            analysisTasks[newTask.analysisName] = newTask
         return analysisTasks
 
     def _identify_terminal_tasks(self, analysisTasks):
@@ -162,4 +162,4 @@ class SnakefileGenerator(object):
             '\n\n'
         workflowString += '\n'.join([x.as_string() for x in ruleList.values()])
 
-        return self._dataSet.save_workflow(workflowString)
+        return self._metaDataSet.save_workflow(workflowString)
