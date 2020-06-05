@@ -1,4 +1,5 @@
-#Reimplementation of Jeff Moffitt's algorithm to sort the rows and columns of a matrix to put the largest values on the diagonal
+#Reimplementation of Jeff Moffitt's algorithm to sort the rows and columns of a
+# matrix to put the largest values on the diagonal
 
 import numpy as np
 import pandas as pd
