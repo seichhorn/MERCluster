@@ -1,0 +1,20 @@
+{
+  "__default__": {
+    "account": "my_account",
+    "time": "100:00:00",
+    "n": 1,
+    "partition": "partition",
+    "mem": 10000,
+    "out": "~/scratch/%j.stdout.txt",
+    "err": "~/scratch/%j.stderr.txt"
+  },
+  "BypassAnalyzedData": {
+    "time": "00:30:00"
+  },
+  "Clustering_neurons": {
+    "mem": 30000
+  },
+  "Clustering_glia": {
+    "mem": 10000
+  }
+}

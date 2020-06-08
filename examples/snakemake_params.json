@@ -1,0 +1,8 @@
+{
+    "cluster": "sbatch --mem={cluster.mem} -A {cluster.account} -p {cluster.partition} -n {cluster.n}  -t {cluster.time} -o {cluster.out} -e {cluster.err} ",
+    "cluster_config": "examples/clusterconfig.json",
+    "jobs": 1000
+}
+
+
+
