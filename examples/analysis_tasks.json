@@ -1,0 +1,28 @@
+{
+    "analysis_tasks": [
+        {
+            "task": "BypassAnalyzedData",
+            "module": "mercluster.analysis.compileMERlinoutput",
+            "parameters": {
+                "source_file": "/path/to/data.csv"
+            }
+        },
+        {
+            "task": "Clustering",
+            "module": "mercluster.analysis.cluster",
+            "parameters": {
+                "file_creation_task": "BypassAnalyzedData",
+                "k_values": [4,6,8,10,12,15,20,25,30,35,40],
+                "resolutions": [1,1.5,2,2.5]
+            }
+        },
+        {
+            "task": "BootstrapClustering",
+            "module": "mercluster.analysis.cluster",
+            "parameters": {
+                "file_creation_task": "BypassAnalyzedData",
+                "cluster_task": "Clustering"
+            }
+        }
+    ]
+}

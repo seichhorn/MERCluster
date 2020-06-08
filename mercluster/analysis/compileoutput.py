@@ -24,7 +24,7 @@ class FileExtensionUnsupported(Exception):
 class MERLinLoadError(Exception):
 	pass
 
-class BypassAnalyzedData(analysistask.AnalysisTask):
+class BypassAnalyzedData(analysistask.analysisTask):
 	"""
 	A metaanalysis task that copies your desired data file to use with
 	subsequent methods. Currently designed for csv files. Provide the full
@@ -42,25 +42,25 @@ class BypassAnalyzedData(analysistask.AnalysisTask):
 		self.supported_ext = ['.csv']
 
 		if not os.path.isfile(self.parameters['source_file']):
-			logger = self.getTaskLogger(self.analysisName)
+			logger = self.get_task_logger(self.analysisName)
 			error = FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT),
 									self.parameters['source_file'])
 			logger.exception(error)
-			self.closeLoggerHandlers(logger)
+			self.close_task_logger(logger)
 			raise error
 
 		ext = os.path.splitext(self.parameters['source_file'])[1]
-		if ext not in supported_ext:
-			logger = self.getTaskLogger(self.analysisName)
+		if ext not in self.supported_ext:
+			logger = self.get_task_logger(self.analysisName)
 			message = 'The source file extension is not currently supported.\
 						Currently only {} file types are supported in {}'.\
 				format(', '.join(supported_ext), self.analysisName)
 			logger.error(message)
-			self.closeLoggerHandlers(logger)
+			self.close_task_logger(logger)
 			raise FileExtensionUnsupported(message)
 
 	def get_dependencies(self):
-		return [self.parameters['source_file']]
+		return []
 
 	def _run_analysis(self):
 		ext = os.path.splitext(self.parameters['source_file'])[1]
@@ -80,7 +80,7 @@ class BypassAnalyzedData(analysistask.AnalysisTask):
 			print('No method to load {} is currently supported'.format(ext))
 
 
-class AggregateData(analysistask.AnalysisTask):
+class AggregateMERlinData(analysistask.analysisTask):
 	"""
 	A metaanalysis task that aggregates data from multiple MERlin datasets.
 	Assumes that all exporting tasks in merlin have a method called
@@ -118,11 +118,11 @@ class AggregateData(analysistask.AnalysisTask):
 													  analysisTask=self,
 													  subDir=output)
 		else:
-			logger = self.getTaskLogger(self.analysisName)
+			logger = self.get_task_logger(self.analysisName)
 			message = 'Something went wrong in loading the MERlin datasets,\
 					   please double check that the requested analyses are\
 					   available as your MERlin.ANALYSIS_HOME directory'
 			logger.error(message)
-			self.closeLoggerHandlers(logger)
+			self.close_task_logger(logger)
 			raise MERLinLoadError(message)
 

@@ -3,6 +3,7 @@ import logging
 import json
 import pandas as pd
 import importlib
+import datetime
 from typing import List, Union, Optional, Dict
 from merlin.core import dataset
 import scanpy as sc
@@ -21,17 +22,16 @@ class metaDataSet:
 	 Base class for a metadataset
 
 	"""
-
 	def __init__(self, metaDataSetName, analysisDirectory=None):
 		self.metaDataSetName = metaDataSetName
 
 		if analysisDirectory is None:
 			self.analysisHome = MERCluster.ANALYSIS_HOME
-			self.analysisPath = os.path.join(MERCluster.ANALYSIS_HOME,
+			self.analysisPath = os.path.join(self.analysisHome,
 											 self.metaDataSetName)
 		else:
 			self.analysisHome = analysisDirectory
-			self.analysisPath = os.path.join(analysisDirectory,
+			self.analysisPath = os.path.join(self.analysisHome,
 											 self.metaDataSetName)
 
 		self.logDir = os.path.join(self.analysisPath, 'log')
@@ -212,6 +212,49 @@ class metaDataSet:
 										  extension='.h5ad')
 
 		return sc.read_h5ad(filePath, **kwargs)
+
+	def save_workflow(self, workflowString: str) -> str:
+		""" Save a snakemake workflow for analysis of this dataset.
+
+		Args:
+			workflowString: a string containing the snakemake workflow
+				to save
+
+		Returns: the path to the saved workflow
+		"""
+		snakemakePath = self.get_snakemake_path()
+		os.makedirs(snakemakePath, exist_ok=True)
+
+		workflowPath = os.sep.join(
+			[snakemakePath, datetime.datetime.now().strftime('%y%m%d_%H%M%S')]) \
+					   + '.Snakefile'
+		with open(workflowPath, 'w') as outFile:
+			outFile.write(workflowString)
+
+		return workflowPath
+
+	def get_snakemake_path(self) -> str:
+		"""Get the directory for storing files related to snakemake.
+
+		Returns: the snakemake path as a string
+		"""
+		return os.sep.join([self.analysisPath, 'snakemake'])
+
+	def get_latest_snakefile(self) -> str:
+		"""
+		Get the path to the most recently created snakefile
+
+		Returns:
+			the .Snakefile path as a string
+		"""
+		allSnakeFiles = [x for x in os.listdir(self.get_snakemake_path())
+						 if '.Snakefile' in x]
+		dates = [x.split('.')[0].split('_') for x in allSnakeFiles]
+		mostRecent = sorted(dates, key=lambda x: [x[0], x[1]], reverse=True)[0]
+		selected = '_'.join(mostRecent) + '.Snakefile'
+		return os.path.join(self.get_snakemake_path(), selected)
+
+
 
 
 class metaMERlinDataSet(metaDataSet):

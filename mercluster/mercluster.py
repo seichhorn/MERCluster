@@ -4,8 +4,6 @@ import os
 import json
 import sys
 import snakemake
-import time
-import requests
 import importlib
 from typing import TextIO
 from typing import Dict
@@ -50,6 +48,10 @@ def build_parser():
 		help='the index of the fragment of the analysis task to execute')
 	parser.add_argument('-s', '--analysis-home',
 						help='the analysis home directory')
+	parser.add_argument('--snakefile-path',
+						help='path to a snakefile, only necessary if running'
+							 'with a snakefile other than the one most recently'
+							 'created for this metadataset')
 	parser.add_argument('-k', '--snakemake-parameters',
 						help='the name of the snakemake parameters file')
 
@@ -94,16 +96,17 @@ def merlin():
 			print('Running %s' % args.analysis_task)
 			e.run(metaDataSet.load_analysis_task(args.analysis_task),
 				  index=args.fragment_index)
-		elif snakefilePath:
-			snakemakeParameters = {}
+		else:
 			if args.snakemake_parameters:
-				with open(os.sep.join([m.SNAKEMAKE_PARAMETERS_HOME,
-									   args.snakemake_parameters])) as f:
+				with open(args.snakemake_parameters])) as f:
 					snakemakeParameters = json.load(f)
-
-			run_with_snakemake(dataSet, snakefilePath, args.core_count,
-							   snakemakeParameters, not args.no_report)
-
+			else:
+				snakemakeParameters = {}
+			if args.snakefile_path:
+				snakefilePath = args.snakefile_path
+			elif snakefilePath is None:
+				snakefilePath = metaDataSet.get_latest_snakefile()
+			run_with_snakemake(metaDataSet, snakefilePath, snakemakeParameters)
 
 def generate_analysis_tasks_and_snakefile(dataSet,
 										  parametersFile: TextIO) -> str:
@@ -115,12 +118,9 @@ def generate_analysis_tasks_and_snakefile(dataSet,
 	print('Snakefile generated at %s' % snakefilePath)
 	return snakefilePath
 
-
 def run_with_snakemake(
-		dataSet, snakefilePath: str, coreCount: int,
-		snakemakeParameters: Dict = {}, report: bool = True):
+		dataSet, snakefilePath: str,
+		snakemakeParameters: Dict = {},):
 	print('Running MERlin pipeline through snakemake')
-	snakemake.snakemake(snakefilePath, cores=coreCount,
-						workdir=dataSet.get_snakemake_path(),
-						stats=snakefilePath + '.stats', lock=False,
-						**snakemakeParameters)
+	snakemake.snakemake(snakefilePath, workdir=dataSet.get_snakemake_path(),
+						lock=False,	**snakemakeParameters)

@@ -165,7 +165,7 @@ class analysisTask(ABC):
 		jobName = '_'.join([x for x in (self.analysisName, i) if x])
 		logger = self.get_task_logger(self.analysisName, i=i)
 		try:
-			if self._event_status('run', i=i, timeLapsed=30):
+			if self.event_status('run', i=i, timeLapsed=30):
 				logger.warning('Attempted to start {},'
 							   'but it is already running'.format(jobName))
 				raise AnalysisAlreadyStartedException(
@@ -174,7 +174,7 @@ class analysisTask(ABC):
 			if overwrite:
 				self.reset_analysis(i=i)
 
-			if self._event_status('done', i=i):
+			if self.event_status('done', i=i):
 				logger.warning('Attempted to start {},'
 							   'but it is already complete'.format(jobName))
 				raise AnalysisAlreadyExistsException(
@@ -208,8 +208,8 @@ class analysisTask(ABC):
 		time the interval passes that this analysis is still running until
 		the analysis completes.
 		"""
-		if self._event_status('done', i=i) or self._event_status('error',
-																	 i=i):
+		if self.event_status('done', i=i) or self.event_status('error',
+															   i=i):
 			return
 
 		self._record_analysis_event('run', i=i)
@@ -250,8 +250,8 @@ class analysisTask(ABC):
 														  fileName=f)
 			os.remove(taskPath)
 
-	def _event_status(self, event, i: Optional[int]=None,
-					  timeLapsed: int=-1) -> bool:
+	def event_status(self, event, i: Optional[int]=None,
+					 timeLapsed: int=-1) -> bool:
 		"""
 		Checks to see if a certain task file exists. If the timeLapsed param
 		is passed then it checks to see if the file was created longer than
@@ -276,14 +276,27 @@ class analysisTask(ABC):
 			allowedStart = time.time() - timeLapsed
 
 		jobName = '_'.join([x for x in (self.analysisName, i) if x])
-		taskFile = self.metaDataSet.get_analysis_path(analysisTask=self,
-													  subDir='tasks',
-													  fileName=jobName,
-													  extension=event)
-		if os.path.exists(taskFile):
-			with open(taskFile,'r') as fp:
-				timeOfEvent = fp.readline()
-			if float(timeOfEvent) > allowedStart:
-				return True
-		else:
-			return False
+
+		if (i is None) and (self.fragment_count() > 1):
+			allEvents = []
+			for frag in range(self.fragment_count()):
+				allEvents.append(self.event_status(event,
+												   i=frag,
+												   timeLapsed=timeLapsed))
+				if False in allEvents:
+					return False
+				else:
+					return True
+
+		else :
+			taskFile = self.metaDataSet.get_analysis_path(analysisTask=self,
+														  subDir='tasks',
+														  fileName=jobName,
+														  extension=event)
+			if os.path.exists(taskFile):
+				with open(taskFile,'r') as fp:
+					timeOfEvent = fp.readline()
+				if float(timeOfEvent) > allowedStart:
+					return True
+			else:
+				return False

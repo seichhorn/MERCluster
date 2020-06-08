@@ -21,11 +21,12 @@ class SnakemakeRule(object):
         return stringIn.replace('\\', '/')
 
     def _expand_as_string(self, task, indexCount) -> str:
+        fileName = task.analysisName + '_{g}'
         return 'expand(%s, g=list(range(%i)))' % (self._add_quotes(
             task.metaDataSet.get_analysis_path(analysisTask=task,
                                                subDir='tasks',
-                                               fileName=task.analysisName,
-                                               extension='_{g}.done')),
+                                               fileName=fileName,
+                                               extension='done')),
                                                   indexCount)
 
     def _generate_input_names(self, task):
@@ -37,12 +38,12 @@ class SnakemakeRule(object):
                 task.metaDataSet.get_analysis_path(analysisTask=task,
                                                    subDir='tasks',
                                                    fileName=task.analysisName,
-                                                   extension='.done')))
+                                                   extension='done')))
 
     def _generate_input(self) -> str:
         if len(self._analysisTask.get_dependencies()) > 0:
             if isinstance(self._analysisTask.get_dependencies()[0],
-                          analysistask.AnalysisTask):
+                          analysistask.analysisTask):
                 inputTasks = self._analysisTask.get_dependencies()
             else:
                 inputTasks = [self._analysisTask.metaDataSet.load_analysis_task(x)
@@ -67,7 +68,7 @@ class SnakemakeRule(object):
 
     def _generate_message(self) -> str:
         messageString = \
-            ''.join(['Running ', self._analysisTask.analysisName()])
+            ''.join(['Running ', self._analysisTask.analysisName])
 
         if self._analysisTask.fragment_count()>1:
             messageString += ' {wildcards.i}'
@@ -96,7 +97,7 @@ class SnakemakeRule(object):
     def as_string(self) -> str:
         fullString = ('rule %s:\n\tinput: %s\n\toutput: %s\n\tmessage: %s\n\t'
                       + 'shell: %s\n') \
-                      % (self._analysisTask.get_analysis_name(),
+                      % (self._analysisTask.analysisName,
                          self._generate_input(), self._generate_output(),
                          self._generate_message(),  self._generate_shell())
 
@@ -143,7 +144,7 @@ class SnakefileGenerator(object):
                 taskGraph.add_edge(d, x)
 
         return [k for k, v in taskGraph.out_degree if v == 0
-                and not analysisTasks[k].is_complete()]
+                and not analysisTasks[k].event_status('done')]
 
     def generate_workflow(self) -> str:
         """Generate a snakemake workflow for the analysis parameters
@@ -154,7 +155,8 @@ class SnakefileGenerator(object):
         """
         analysisTasks = self._parse_parameters()
         ruleList = {k: SnakemakeRule(v, self._pythonPath)
-                    for k, v in analysisTasks.items() if not v.is_complete()}
+                    for k, v in analysisTasks.items()
+                    if not v.event_status('done')}
 
         terminalTasks = self._identify_terminal_tasks(analysisTasks)
         workflowString = 'rule all: \n\tinput: ' + \

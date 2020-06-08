@@ -61,7 +61,10 @@ class Clustering(analysistask.analysisTask):
                len(self.parameters['resolutions'])
 
     def get_dependencies(self) -> List:
-        return []
+        if self.parameters['file_creation_task'] is None:
+            return []
+        else:
+            return [self.parameters['file_creation_task']]
 
     def _load_data(self, overwrite=False) -> sc.AnnData:
         """
@@ -143,7 +146,7 @@ class Clustering(analysistask.analysisTask):
         if overwrite:
             with contextlib.suppress(FileNotFoundError):
                 os.remove(primaryCellPath)
-        if os.path.exists(primaryCellPath)
+        if os.path.exists(primaryCellPath):
             selectedCells = self.metaDataSet.read_csv_to_dataframe(
                 'cellsToUse', analysisTask=self, **kwargs)
             return aData[selectedCells.values.tolist(),:]
@@ -384,6 +387,13 @@ class BootstrapClustering(Clustering):
             self.parameters['bootstrap_fraction'] = 0.8
         if 'bootstraps' not in self.parameters:
             self.parameters['bootstraps'] = 20
+        if 'cluster_task' not in self.parameters:
+            self.parameters['cluster_task'] = None
+
+        if self.parameters['cluster_task']:
+            clTask = self.metaDataSet.load_analysis_task(
+                self.parameters['cluster_task'])
+            self.parameters = {**self.parameters, **clTask.parameters}
 
     def fragment_count(self):
         return len(self.parameters['k_values']) *\
@@ -519,9 +529,6 @@ class ClusterStabilityAnalysis(analysistask.analysisTask):
 
         if 'min_fraction_cells' not in self.parameters:
             self.parameters['min_fraction_cells'] = 0.9
-        if 'cell_type_annotation_file' not in self.parameters:
-            self.parameters['cell_type_annotation_file'] = None
-
         self.clusterTask = self.metaDataSet.load_analysis_task(
             self.parameters['cluster_task'])
         self.bootstrapTask = self.metaDataSet.load_analysis_task(
@@ -636,23 +643,15 @@ class ClusterStabilityAnalysis(analysistask.analysisTask):
             'selected_k_and_r', analysisTask=self, subDir='output')
 
         selectedClustering = self.retrieve_selected_clustering()
-        if self.parameters['cell_type_annotation_file'] is not None:
-            anno = self.metaDataSet.read_csv_to_dataframe('cellTypeAnnotations',
-                                                          analysisTask=self)
-            selectedClusters = anno[anno['cell_type'] ==
-                                    cellType]['cell_type'].values.tolist()
-            colName = 'kValue_{}_resolution_{}'.format(
-                selectedVals['selected_kValue'],
-                selectedVals['selected_resolution'])
-            return selectedClustering[selectedClustering[colName].isin(
-                selectedClusters)].index.values.tolist()
-        else:
-            logger = self.get_task_logger(self.analysisName)
-            logger.error('You have no provided a set of cluster -> cell type'
-                         'annotations')
-            self.close_task_logger(logger)
-            raise MissingAnnotationError('You have no provided a set of '
-                                         'cluster -> cell type annotations')
+        anno = self.metaDataSet.read_csv_to_dataframe('cellTypeAnnotations',
+                                                      analysisTask=self)
+        selectedClusters = anno[anno['cell_type'] ==
+                                cellType]['cluster'].values.tolist()
+        colName = 'kValue_{}_resolution_{}'.format(
+            selectedVals['selected_kValue'],
+            selectedVals['selected_resolution'])
+        return selectedClustering[selectedClustering[colName].isin(
+            selectedClusters)].index.values.tolist()
 
 
 
