@@ -6,7 +6,7 @@ import snakemake
 import importlib
 from typing import TextIO
 from typing import Dict
-from mercluster.util import snakewriter
+from mercluster.utils import snakewriter
 
 
 def build_parser():
