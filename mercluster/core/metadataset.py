@@ -14,6 +14,12 @@ from mercluster.core import analysistask
 listOrPath = Union[List, str]
 TaskOrName = Union[analysistask.analysisTask, str]
 
+class FileExtensionUnsupported(Exception):
+	pass
+
+class DatasetInconsistencyError(Exception):
+	pass
+
 class metaDataSet:
 	"""
 	Much of the ideas/core code copied from MERlin, doi:10.5281/zenodo.3758540
@@ -268,28 +274,36 @@ class metaMERlinDataSet(metaDataSet):
 		self.datasets = self._load_dataset_info(datasets)
 		self.datasetNames = list(self.datasets.keys())
 
-	def _load_dataset_info(self, datasets: Optional[listOrPath]=None):
+	def _load_dataset_info(self, datasets: Optional[listOrPath]=None) -> Dict:
 		"""
 		Loads information about the datasets that will be used within this
-		metadataset. This method accepts two formats. The first, is a list
-		of each dataset's name, this is for convenience to handle the simplest
-		use cases. The second is a json format file containing the dataset name,
-		and the paths to the data home and analysis home directories for that
-		dataset.
+		metadataset. If there is an existing datasetInfo.json file then it loads
+		information from that. Otherwise, it accepts two formats. The first, is
+		a list of each dataset's name, this is for convenience to handle the
+		simplest use cases. The second is a json format file containing the
+		dataset name, and the paths to the data home and analysis home
+		directories for that dataset.
 
-		:param datasets:
-		:return:
+		Args:
+		 datasets: List of dataset names or a path to a json file with the
+		 		   dataset names and analysis/data home paths
+
+		Returns:
+			Dictionary of dictionaries keyed on dataset names then on dataHome
+			and analysisHome for the corresonding dataset.
 		"""
-		if datasets is None:
-			path = self.get_analysis_path(fileName='datasetInfo',
-										  extension='.json')
+		path = self.get_analysis_path(fileName='datasetInfo',
+									  extension='.json')
+		pathExists = os.path.exists(path)
+		if pathExists:
 			with open(path,'w') as fp:
-				analysisInfo = json.load(fp)
-		elif type(datasets) == list:
+				loadedParams = json.load(fp)
+
+		if type(datasets) == list:
 			analysisInfo = dict()
 			for dataset in datasets:
-				analysisInfo[dataset] = {'dataHome':None, 'analysisHome':None}
-				self.write_json_from_dict(analysisInfo, 'datasetInfo')
+				analysisInfo[dataset] = {'dataHome': None,
+										 'analysisHome': None}
 		elif type(datasets) == str:
 			filePath, ext = os.path.splitext(datasets)
 			if ext.upper() == '.JSON':
@@ -306,12 +320,29 @@ class metaMERlinDataSet(metaDataSet):
 						analysisInfo[k]['analysisHome'] = v['analysisHome']
 					else:
 						analysisInfo[k]['analysisHome'] = None
-				self.write_json_from_dict(analysisInfo, 'datasetInfo')
 			else:
-				raise FileExtensionUnsupported("Please provide path to a json \
-											   file containing the dataset \
-											   information")
-		return analysisInfo
+				raise FileExtensionUnsupported(
+					"Please provide path to a json file containing the"
+					"dataset information")
+
+		if pathExists and (datasets is None):
+			return loadedParams
+		elif pathExists and (datasets is not None):
+			if loadedParams == analysisInfo:
+				return loadedParams
+			else:
+				raise DatasetInconsistencyError(
+					'The dataset information you provided conflicts with the'
+					'information that was previously saved for this metadataset'
+				)
+		elif (not pathExists) and (datasets is not None):
+			self.write_json_from_dict(analysisInfo, 'datasetInfo')
+			return analysisInfo
+		else:
+			raise FileNotFoundError
+
+	def _validate_input_dataset_params(self) -> None:
+
 
 	def load_MERlin_dataset(self, dataset: str) -> dataset.MERFISHDataSet:
 		"""
