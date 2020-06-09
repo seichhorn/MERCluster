@@ -1,6 +1,6 @@
 # MERCluster - analysis of groups of datasets
 
-MERcluster leverages the [MERlin](https://github.com/ZhuangLab/MERlin) core
+MERCluster leverages the [MERlin](https://github.com/ZhuangLab/MERlin) core
 architecture, but focuses on analyses that are performed on the analysis results
 output from MERlin. At present, the primary implemented tasks relate to clustering 
 but the general architecture present here is easily extensible to additional tasks. 

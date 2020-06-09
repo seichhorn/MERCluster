@@ -1,6 +1,5 @@
 import argparse
 import cProfile
-import os
 import json
 import sys
 import snakemake

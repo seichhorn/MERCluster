@@ -26,6 +26,14 @@ Install MERCluster within the environment you just created and activated:
     git clone https://github.com/seichhorn/MERCluster.git
     pip install -e MERCluster
 
+If you plan to use MERCluster to interface directly with MERlin analyses,
+install MERlin as follows:
+
+.. code-block:: none
+
+    git clone https://github.com/ZhuangLab/MERlin.git
+    pip install -e MERlin
+
 If you wish to use this environment in a jupyter notebook, add it as a kernel:
 
 .. code-block:: none
