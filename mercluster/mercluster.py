@@ -7,7 +7,7 @@ import importlib
 from typing import TextIO
 from typing import Dict
 from mercluster.utils import snakewriter
-
+from mercluster.core.executor import LocalExecutor as e
 
 def build_parser():
 	parser = argparse.ArgumentParser(description='Analyze datasets',
