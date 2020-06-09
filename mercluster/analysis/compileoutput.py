@@ -35,7 +35,7 @@ class BypassAnalyzedData(analysistask.analysisTask):
 
 		# If additional loading methods are added then update this list to
 		# reflect supported file types
-		self.supported_ext = ['.csv']
+		self.supported_ext = ['.csv', '.h5ad']
 
 		if not os.path.isfile(self.parameters['source_file']):
 			logger = self.get_task_logger(self.analysisName)
@@ -50,7 +50,7 @@ class BypassAnalyzedData(analysistask.analysisTask):
 			logger = self.get_task_logger(self.analysisName)
 			message = 'The source file extension is not currently supported.\
 						Currently only {} file types are supported in {}'.\
-				format(', '.join(supported_ext), self.analysisName)
+				format(', '.join(self.supported_ext), self.analysisName)
 			logger.error(message)
 			self.close_task_logger(logger)
 			raise FileExtensionUnsupported(message)
@@ -72,6 +72,11 @@ class BypassAnalyzedData(analysistask.analysisTask):
 			return self.metaDataSet.read_csv_to_dataframe('aggregated_data',
 														  analysisTask=self,
 														  subDir='output')
+		elif ext == '.h5ad':
+			return self.metaDataSet.read_h5ad_to_anndata('aggregated_data',
+														 analysisTask=self,
+														 subDir='output')
+
 		else:
 			print('No method to load {} is currently supported'.format(ext))
 

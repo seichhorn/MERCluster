@@ -6,6 +6,7 @@ import datetime
 from typing import List, Union, Optional, Dict
 from merlin.core import dataset
 import scanpy as sc
+import mercluster
 from mercluster.utils import logutils
 from mercluster.core import analysistask
 
@@ -25,7 +26,7 @@ class metaDataSet:
 		self.metaDataSetName = metaDataSetName
 
 		if analysisDirectory is None:
-			self.analysisHome = MERCluster.ANALYSIS_HOME
+			self.analysisHome = mercluster.ANALYSIS_HOME
 			self.analysisPath = os.path.join(self.analysisHome,
 											 self.metaDataSetName)
 		else:
