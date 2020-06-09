@@ -20,7 +20,7 @@ setuptools.setup(
 	url="https://github.com/seichhorn/MERCluster",
 	packages=setuptools.find_packages(),
 	install_requires=install_requires,
-	entry_points={'console_scripts': ["mercluster=mercluster.mercluster:mercluster"]}
+	entry_points={'console_scripts': ["mercluster=mercluster.mercluster:mercluster"]},
 	classifiers=[
 		"Programming Language :: Python :: 3",
 		"License :: OSI Approved :: MIT License",
