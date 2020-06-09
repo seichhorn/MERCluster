@@ -56,7 +56,7 @@ def build_parser():
 
 	return parser
 
-def merlin():
+def mercluster():
 	print('MERCluster')
 	parser = build_parser()
 	args, argv = parser.parse_known_args()
