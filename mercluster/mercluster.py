@@ -25,17 +25,14 @@ def build_parser():
 						help='the type analysis performed on the datasets')
 
 	group = parser.add_mutually_exclusive_group(required=False)
-	group.add_argument('--dataset-list')
-	group.add_argument('--dataset-path')
-	parser.add_argument('--dataset-list', nargs='*',
+	group.add_argument('--dataset-list', nargs='*',
 						help='list of dataset names that comprise the '
 							 + 'metadataset when dataset class is '
 							 + 'mercluster.core.metadataset.metaMERlinDataSet,'
 							 + 'use either --dataset-list or --dataset-path')
-	parser.add_argument('--dataset-path',
-						help='path to json file specifying dataset, use either '
+	group.add_argument('--dataset-path',
+					   help='path to json file specifying dataset, use either '
 							 + '--dataset-list or --dataset-path')
-
 	parser.add_argument('-a', '--analysis-parameters',
 						help='path to the analysis parameters file to use')
 	parser.add_argument(
