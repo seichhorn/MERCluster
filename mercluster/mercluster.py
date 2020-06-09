@@ -97,7 +97,7 @@ def mercluster():
 				  index=args.fragment_index)
 		else:
 			if args.snakemake_parameters:
-				with open(args.snakemake_parameters])) as f:
+				with open(args.snakemake_parameters) as f:
 					snakemakeParameters = json.load(f)
 			else:
 				snakemakeParameters = {}

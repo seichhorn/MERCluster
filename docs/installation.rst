@@ -31,6 +31,7 @@ install MERlin as follows:
 
 .. code-block:: none
 
+    conda install rtree pytables
     git clone https://github.com/ZhuangLab/MERlin.git
     pip install -e MERlin
 
