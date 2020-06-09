@@ -80,14 +80,15 @@ class SnakemakeRule(object):
             shellString = 'python '
         else:
             shellString = self._clean_string(self._pythonPath) + ' '
-        shellString += '-m merlin '
+        shellString += '-m mercluster '
         shellString += self._clean_string(
             self._analysisTask.metaDataSet.metaDataSetName) + ' '
 
         shellString += ''.join(
-            ['-t ', self._clean_string(self._analysisTask.analysisName),
+            ['-t ', '\"', self._clean_string(self._analysisTask.analysisName),
              '\"', ' -s \"',
-             self._clean_string(self._analysisTask.metaDataSet.analysisHome), '\"'])
+             self._clean_string(self._analysisTask.metaDataSet.analysisHome),
+             '\"'])
 
         if self._analysisTask.fragment_count()>1:
             shellString += ' -i {wildcards.i}'
