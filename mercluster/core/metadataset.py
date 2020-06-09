@@ -296,7 +296,7 @@ class metaMERlinDataSet(metaDataSet):
 									  extension='.json')
 		pathExists = os.path.exists(path)
 		if pathExists:
-			with open(path,'w') as fp:
+			with open(path,'r') as fp:
 				loadedParams = json.load(fp)
 
 		if type(datasets) == list:
@@ -340,9 +340,6 @@ class metaMERlinDataSet(metaDataSet):
 			return analysisInfo
 		else:
 			raise FileNotFoundError
-
-	def _validate_input_dataset_params(self) -> None:
-
 
 	def load_MERlin_dataset(self, dataset: str) -> dataset.MERFISHDataSet:
 		"""
