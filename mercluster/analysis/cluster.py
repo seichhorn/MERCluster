@@ -216,7 +216,8 @@ class Clustering(analysistask.analysisTask):
         return aData
 
     def _cluster(self, aData, resolution, clusterMin=10,
-                 clusteringAlgorithm='louvain') -> Tuple[pd.DataFrame]:
+                 clusteringAlgorithm='leiden') -> Tuple[pd.DataFrame,
+                                                         pd.DataFrame]:
         """
         Performs the clustering. This function is a little more complicated
         than strictly necessary because it preserves the information about
@@ -282,7 +283,7 @@ class Clustering(analysistask.analysisTask):
         print('Clustering yields {} clusters with at least {} cells'.format(
             clusteringOutput[colLabel].unique().astype(int).max(), clusterMin))
 
-        return (df, clusteringOutput)
+        return df, clusteringOutput
 
     def _save_clustering_output(self, df : pd.DataFrame, subDir: str,
                                 kValue: int, resolution: float,
@@ -341,7 +342,7 @@ class Clustering(analysistask.analysisTask):
             subDir='output/iterations')
         return data
 
-    def _run_analysis(self, i):
+    def _run_analysis(self, i: int=None) -> None:
         aData = self._load_data()
         kValue, resolution = self._expand_k_and_resolution()[i]
         self.kValue = kValue
@@ -532,8 +533,8 @@ class ClusterStabilityAnalysis(analysistask.analysisTask):
             self.parameters['resolutions_to_consider'] = \
                 self.clusterTask.parameters['resolutions']
         self.parameters['cell_type'] = self.clusterTask.parameters['cell_type']
-        self.parameters['bootstrap_iterations'] = \
-            self.bootstrapTask.parameters['bootstrap_iterations']
+        self.parameters['bootstraps'] = \
+            self.bootstrapTask.parameters['bootstraps']
 
     def get_dependencies(self):
         return [self.parameters['cluster_task'],
@@ -590,7 +591,7 @@ class ClusterStabilityAnalysis(analysistask.analysisTask):
             for resolution in self.parameters['resolutions_to_consider']:
                 fullClustering, fullBoot = self._gather_data(
                     kValue, resolution, self.parameters['cell_type'],
-                    self.parameters['bootstrap_iterations'])
+                    self.parameters['bootstraps'])
 
                 stableClusters, recoveryDF, recoveredCells, totalCells =\
                     self._determine_stability(fullClustering, fullBoot)
