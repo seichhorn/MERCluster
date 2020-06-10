@@ -21,8 +21,8 @@ class SnakemakeRule(object):
         return stringIn.replace('\\', '/')
 
     def _expand_as_string(self, task, indexCount) -> str:
-        fileName = task.analysisName + '_{g}'
-        return 'expand(%s, g=list(range(%i)))' % (self._add_quotes(
+        fileName = task.analysisName + '_{i}'
+        return 'expand(%s, i=list(range(%i)))' % (self._add_quotes(
             task.metaDataSet.get_analysis_path(analysisTask=task,
                                                subDir='tasks',
                                                fileName=fileName,
@@ -56,8 +56,12 @@ class SnakemakeRule(object):
 
     def _generate_output(self) -> str:
         if self._analysisTask.fragment_count()>1:
-            return self._clean_string(self._expand_as_string(
-                self._analysisTask, self._analysisTask.fragment_count()))
+            partialPath = self._analysisTask.metaDataSet.get_analysis_path(
+                analysisTask=self._analysisTask,
+                subDir='tasks',
+                fileName=self._analysisTask.analysisName)
+            path = partialPath + '_{i}.done'
+            return self._clean_string(self._add_quotes(path))
         else:
             return self._clean_string(self._add_quotes(
                 self._analysisTask.metaDataSet.get_analysis_path(
@@ -156,8 +160,7 @@ class SnakefileGenerator(object):
         """
         analysisTasks = self._parse_parameters()
         ruleList = {k: SnakemakeRule(v, self._pythonPath)
-                    for k, v in analysisTasks.items()
-                    if not v.event_status('done')}
+                    for k, v in analysisTasks.items()}
 
         terminalTasks = self._identify_terminal_tasks(analysisTasks)
         workflowString = 'rule all: \n\tinput: ' + \

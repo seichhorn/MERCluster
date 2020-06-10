@@ -4,10 +4,11 @@ import time
 import threading
 import numpy as np
 import logging
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from typing import List, Optional
 from mercluster.utils import logutils
+
 
 class AnalysisAlreadyStartedException(Exception):
 	pass
@@ -16,16 +17,18 @@ class AnalysisAlreadyStartedException(Exception):
 class AnalysisAlreadyExistsException(Exception):
 	pass
 
+
 class ParameterInconsistencyException(Exception):
 	pass
+
 
 class analysisTask(ABC):
 	"""
 	Much of the ideas/core code copied from MERlin, doi:10.5281/zenodo.3758540
 	but stripped down to retain only required functionality
 
- 	An abstract class for analysis tasks, creates the basic directory structure,
- 	sets up logging, and enables running of task.
+	An abstract class for analysis tasks, creates the basic directory structure,
+	sets up logging, and enables running of task.
 
 	"""
 	def __init__(self, metaDataSet, parameters=None, analysisName=None):
@@ -109,7 +112,7 @@ class analysisTask(ABC):
 			originalParameters = self.metaDataSet.read_json_to_dict(
 				'task', analysisTask=self, subDir='tasks')['parameters']
 			failures = []
-			for k,v in originalParameters.items():
+			for k, v in originalParameters.items():
 				if k not in self.parameters:
 					message = '{} not in current parameters, was present in' \
 							  ' parameters originally used to create task'
@@ -159,8 +162,12 @@ class analysisTask(ABC):
 	def close_task_logger(self, logger) -> None:
 		logutils.closeLoggerHandlers(logger)
 
-	def run(self, i=None, overwrite=False) -> None:
-		jobName = '_'.join([x for x in (self.analysisName, i) if x])
+	def _task_file_name(self, i: int=None) -> str:
+		return('_'.join([str(x) for x in
+						 (self.analysisName, type(i)==int) if x]))
+
+	def run(self, i: int=None, overwrite=False) -> None:
+		jobName = self._task_file_name(i=i)
 		logger = self.get_task_logger(self.analysisName, i=i)
 		try:
 			if self.event_status('run', i=i, timeLapsed=30):
@@ -181,7 +188,7 @@ class analysisTask(ABC):
 
 			logger.info('Starting {}'.format(jobName))
 			self._indicate_running(i=i)
-			self._run_analysis(i)
+			self._run_analysis(i=i)
 			self._record_analysis_event('done', i=i)
 			logger.info('Completed {}'.format(jobName))
 			self.close_task_logger(logger)
@@ -191,7 +198,7 @@ class analysisTask(ABC):
 			self.close_task_logger(logger)
 			raise e
 
-	# @abstractmethod
+	@abstractmethod
 	def _run_analysis(self, i: int=None) -> None:
 		"""Method to actually perform actual analysis, implemented by each
 		specific subclass"""
@@ -224,7 +231,7 @@ class analysisTask(ABC):
 			jobName: name of analysis task
 			event: type of event to record (can be running, complete, or error)
 		"""
-		jobName = '_'.join([x for x in (self.analysisName, i) if x])
+		jobName = self._task_file_name(i=i)
 		runTaskPath = self.metaDataSet.get_analysis_path(analysisTask=self,
 														 subDir='tasks',
 														 fileName = jobName,
@@ -238,7 +245,7 @@ class analysisTask(ABC):
 		Args:
 			jobName: name of job that tasks should be reset
 		"""
-		jobName = '_'.join([x for x in (self.analysisName, i) if x])
+		jobName = self._task_file_name(i=i)
 		allTaskFiles = os.listdir(self.taskDir)
 		toRemove = [x for x in allTaskFiles if '{}.'.format(jobName) in x]
 
@@ -273,7 +280,7 @@ class analysisTask(ABC):
 		else:
 			allowedStart = time.time() - timeLapsed
 
-		jobName = '_'.join([x for x in (self.analysisName, i) if x])
+		jobName = self._task_file_name(i=i)
 
 		if (i is None) and (self.fragment_count() > 1):
 			allEvents = []

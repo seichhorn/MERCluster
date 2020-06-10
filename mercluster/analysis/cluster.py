@@ -3,10 +3,14 @@ import numpy as np
 import pandas as pd
 import contextlib
 from typing import List, Tuple
+from sklearn.decomposition import PCA
+
 
 from mercluster.core import analysistask
 from mercluster.utils import scanpy_helpers
 import scanpy as sc
+from scanpy.neighbors import Neighbors
+
 sc.settings.verbosity = 3  # verbosity: errors (0), warnings (1), info (2), hints (3)
 sc.settings.set_figure_params(dpi=150)  # low dpi (dots per inch) yields small inline figures
 
@@ -46,6 +50,7 @@ class Clustering(analysistask.analysisTask):
 
         self.cellType = self.parameters['cell_type']
         self.priorClustering = self.parameters['prior_clustering']
+        self._create_analysis_subdirectory('output/iterations')
 
     def fragment_count(self):
         return len(self.parameters['k_values']) *\
@@ -57,7 +62,7 @@ class Clustering(analysistask.analysisTask):
         else:
             return [self.parameters['file_creation_task']]
 
-    def _load_data(self, overwrite=False) -> sc.AnnData:
+    def _load_data(self) -> sc.AnnData:
         """
         Loads data from the file creation task and returns it as an anndata
         object. If the loaded file is a pandas dataframe it converts it to
@@ -66,33 +71,18 @@ class Clustering(analysistask.analysisTask):
         Returns:
              anndata object, obs are cells, var are genes
         """
-        path = os.path.exists(metaDataSet.get_analysis_path(analysisTask=self,
-                                                            fileName='aData',
-                                                            extension='.h5ad'))
-        if overwrite:
-            with contextlib.suppress(FileNotFoundError):
-                os.remove(path)
-        if os.path.exists(path):
-            aData = self.metaDataSet.read_h5ad_to_anndata('aData',
-                                                          analysisTask=self)
-            return aData
+
+        requestedTask = self.metaDataSet.load_analysis_task(
+            self.parameters['file_creation_task'])
+        if requestedTask.ext == '.csv':
+            kwargs = {'index_col':0}
+            data = requestedTask.return_exported_data(**kwargs)
+            aData = sc.AnnData(data.values)
+            aData.obs.index = data.index.values.astype(str).tolist()
+            aData.var.index = data.columns.values.tolist()
         else:
-            requestedTask = self.parameters['file_creation_task']
-            data = self.metaDataSet.load_analysis_task(
-                requestedTask).return_exported_data()
-            if type(data) == pd.DataFrame:
-                aData = sc.AnnData(data.values)
-                aData.obs = data.index.values.tolist()
-                aData.var = data.columns.values.tolist()
-                self.metaDataSet.write_h5ad_from_anndata(aData,
-                                                         analysisTask=self,
-                                                         fileName='aData')
-                return aData
-            elif type(data) == sc.AnnData:
-                self.metaDataSet.write_h5ad_from_anndata(aData,
-                                                         analysisTask=self,
-                                                         fileName='aData')
-                return data
+            aData = requestedTask.return_exported_data()
+        return aData
 
     def _expand_k_and_resolution(self) -> List:
         """
@@ -179,9 +169,9 @@ class Clustering(analysistask.analysisTask):
                           for _ in range(10)]
 
         # Use only PCs that explain more variance than the random dataframe
-        pcsToUse = len(aData.uns['pca']['variance']
+        pcsToUse = max(len(aData.uns['pca']['variance']
                        [aData.uns['pca']['variance'] >
-                        np.median(randomVariance)])
+                        np.median(randomVariance)]), 1)
         self.pcsToUse = pcsToUse
         print('Using {} PCs'.format(pcsToUse))
         return aData
@@ -209,10 +199,10 @@ class Clustering(analysistask.analysisTask):
         else:
             sc.pp.neighbors(aData, n_neighbors=int(kValue), n_pcs=0)
 
-        aData.uns['neighbors']['connectivities'] =\
+        aData.obsp['connectivities'] =\
             scanpy_helpers.neighbor_graph(
                 scanpy_helpers.jaccard_kernel,
-                aData.uns['neighbors']['connectivities'])
+                aData.obsp['connectivities'])
         return aData
 
     def _cluster(self, aData, resolution, clusterMin=10,
@@ -242,8 +232,7 @@ class Clustering(analysistask.analysisTask):
             labels from all rounds of modularity optimization, second is just
             the final round of optimization. Index is always cell id
         """
-        adjacency = aData.uns['neighbors']['connectivities']
-        g = sc.utils.get_igraph_from_adjacency(adjacency, directed=False)
+        g = Neighbors(aData).to_igraph()
 
         if clusteringAlgorithm == 'louvain':
             import louvain as clAlgo
@@ -276,7 +265,7 @@ class Clustering(analysistask.analysisTask):
         clusteringOutputGrouped = clusteringOutput.groupby(colLabel).size()
 
         toZero = clusteringOutputGrouped[
-            clusteringOutputGrouped < int(min_size)].index.values.tolist()
+            clusteringOutputGrouped < int(clusterMin)].index.values.tolist()
         mask = clusteringOutput[colLabel].isin(toZero)
         clusteringOutput[colLabel] = clusteringOutput[colLabel].where(~mask,
                                                                       other=-1)
@@ -314,7 +303,8 @@ class Clustering(analysistask.analysisTask):
             'kValue_{}_resolution_{}_type_{}'.format(
                 kValue, '_point_'.join(str(resolution).split('.')), cellType),
             analysisTask=self,
-            subDir='output')
+            subDir='output',
+            **{'index_col':0})
         return data
 
     def return_clustering_iteration_result(self,
@@ -339,12 +329,16 @@ class Clustering(analysistask.analysisTask):
             'kValue_{}_resolution_{}_type_{}'.format(kValue, int(resolution),
                                                      cellType),
             analysisTask=self,
-            subDir='output/iterations')
+            subDir='output/iterations',
+            **{'index_col': 0})
         return data
 
     def _run_analysis(self, i: int=None) -> None:
         aData = self._load_data()
-        kValue, resolution = self._expand_k_and_resolution()[i]
+        if i is None:
+            kValue, resolution = self._expand_k_and_resolution()[0]
+        else:
+            kValue, resolution = self._expand_k_and_resolution()[i]
         self.kValue = kValue
         self.resolution = resolution
 
@@ -453,7 +447,8 @@ class BootstrapClustering(Clustering):
                 kValue, '_point_'.join(str(resolution).split('.')), cellType,
                 bootstrapNum),
             analysisTask=self,
-            subDir='output')
+            subDir='output',
+            **{'index_col': 0})
         return data
 
     def return_clustering_iteration_result(self, kValue: int,
@@ -478,13 +473,18 @@ class BootstrapClustering(Clustering):
                 kValue, '_point_'.join(str(resolution).split('.')), cellType,
                 bootstrapNum),
             analysisTask=self,
-            subDir='output/iterations')
+            subDir='output/iterations',
+            **{'index_col': 0})
         return data
 
-    def _run_analysis(self, fragmentIndex):
+    def _run_analysis(self, i: int=None) -> None:
         aData = self._load_data()
-        kValue, resolution, bootstrapNum = self._expand_k_and_resolution()[
-            fragmentIndex]
+        if i is None:
+            kValue, resolution, bootstrapNum = self._expand_k_and_resolution()[
+                0]
+        else:
+            kValue, resolution, bootstrapNum = self._expand_k_and_resolution()[
+                i]
         self.kValue = kValue
         self.resolution = resolution
         self.bootstrapNum = bootstrapNum
@@ -562,7 +562,8 @@ class ClusterStabilityAnalysis(analysistask.analysisTask):
 
     def _determine_stability(self, fullClustering, fullBoot):
         for boot in range(fullBoot.shape[1]):
-            tempMerge = fullClustering.merge(fullBoot, left_index=True,
+            tempMerge = fullClustering.merge(fullBoot.iloc[:,[boot]],
+                                             left_index=True,
                                              right_index=True)
             tempMerge.columns = ['Full', 'Boot']
             tempMerge = tempMerge[tempMerge['Full'] != -1]
@@ -585,7 +586,7 @@ class ClusterStabilityAnalysis(analysistask.analysisTask):
         return (stableClusters, recoveryDF,
                 recoveredCells, totalCells)
 
-    def _run_analysis(self) -> None:
+    def _run_analysis(self, i: int=None) -> None:
         toDF = []
         for kValue in self.parameters['kValues_to_consider']:
             for resolution in self.parameters['resolutions_to_consider']:
@@ -606,12 +607,16 @@ class ClusterStabilityAnalysis(analysistask.analysisTask):
         df['fraction stable cells'] = df['stable cells'] /\
                                       df['total cells']
 
-        selectedEntry = df[df['fraction stable cells'] >=
-                             self.parameters['min_fraction_cells']].sort_values(
-            by='stable clusters', ascending=False).iloc[0, :]
+        sortedEntries = df[df['fraction stable cells'] >=
+                           self.parameters['min_fraction_cells']].sort_values(
+            by='stable clusters', ascending=False)
 
-        selectedK = selectedEntry.loc['kValue']
-        selectedR = selectedEntry.loc['resolution']
+        if len(sortedEntries) > 0:
+            selectedK = selectedEntry.iloc[0,:].loc['kValue']
+            selectedR = selectedEntry.iloc[0,:].loc['resolution']
+        else:
+            selectedK = None
+            selectedR = None
 
         self.metaDataSet.write_csv_from_dataframe(df, 'full_stability_analysis',
                                                   analysisTask=self,
@@ -644,9 +649,3 @@ class ClusterStabilityAnalysis(analysistask.analysisTask):
             selectedVals['selected_resolution'])
         return selectedClustering[selectedClustering[colName].isin(
             selectedClusters)].index.values.tolist()
-
-
-
-
-
-

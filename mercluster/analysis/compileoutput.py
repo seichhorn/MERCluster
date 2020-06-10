@@ -45,8 +45,8 @@ class BypassAnalyzedData(analysistask.analysisTask):
 			self.close_task_logger(logger)
 			raise error
 
-		ext = os.path.splitext(self.parameters['source_file'])[1]
-		if ext not in self.supported_ext:
+		self.ext = os.path.splitext(self.parameters['source_file'])[1]
+		if self.ext not in self.supported_ext:
 			logger = self.get_task_logger(self.analysisName)
 			message = 'The source file extension is not currently supported.\
 						Currently only {} file types are supported in {}'.\
@@ -58,27 +58,28 @@ class BypassAnalyzedData(analysistask.analysisTask):
 	def get_dependencies(self):
 		return []
 
-	def _run_analysis(self):
-		ext = os.path.splitext(self.parameters['source_file'])[1]
+	def _run_analysis(self, i: int=None) -> None:
 		dst = self.metaDataSet.get_analysis_path(analysisTask=self,
 												 subDir = 'output',
 												 fileName = 'aggregated_data',
-												 extension = ext)
+												 extension = self.ext)
 		copy2(self.parameters['source_file'], dst)
 
-	def return_exported_data(self):
-		ext = os.path.splitext(self.parameters['source_file'])[1]
-		if ext == '.csv':
+	def return_exported_data(self , **kwargs):
+		if self.ext == '.csv':
 			return self.metaDataSet.read_csv_to_dataframe('aggregated_data',
 														  analysisTask=self,
-														  subDir='output')
-		elif ext == '.h5ad':
+														  subDir='output',
+														  **kwargs)
+		elif self.ext == '.h5ad':
 			return self.metaDataSet.read_h5ad_to_anndata('aggregated_data',
 														 analysisTask=self,
-														 subDir='output')
+														 subDir='output',
+														 **kwargs)
 
 		else:
-			print('No method to load {} is currently supported'.format(ext))
+			print('No method to load {} is currently supported'.format(
+				self.ext))
 
 
 class AggregateMERlinData(analysistask.analysisTask):
@@ -94,6 +95,7 @@ class AggregateMERlinData(analysistask.analysisTask):
 
 		if 'overwrite' not in self.parameters:
 			self.parameters['overwrite'] = False
+		self.ext = '.csv'
 
 	def get_dependencies(self):
 		return [self.parameters['task_to_aggregate']]
@@ -104,7 +106,7 @@ class AggregateMERlinData(analysistask.analysisTask):
 													  subDir='output',
 													  **kwargs)
 
-	def _run_analysis(self):
+	def _run_analysis(self, i: int=None) -> None:
 		allAnalyses = []
 		taskToAggregate = self.parameters['task_to_aggregate']
 		for dsName in self.metaDataSet.datasetNames:

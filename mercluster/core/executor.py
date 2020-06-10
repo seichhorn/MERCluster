@@ -36,7 +36,7 @@ class LocalExecutor(Executor):
 
 	def run(self, task: analysistask.analysisTask, index: int = None,
 			rerunCompleted: bool = False) -> None:
-		if task.is_complete() and not rerunCompleted:
+		if task.event_status('done', i=index) and not rerunCompleted:
 			return
 
 		if rerunCompleted:

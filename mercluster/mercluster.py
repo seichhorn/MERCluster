@@ -7,7 +7,7 @@ import importlib
 from typing import TextIO
 from typing import Dict
 from mercluster.utils import snakewriter
-from mercluster.core.executor import LocalExecutor as e
+from mercluster.core import executor
 
 def build_parser():
 	parser = argparse.ArgumentParser(description='Analyze datasets',
@@ -89,6 +89,8 @@ def mercluster():
 
 	if not args.generate_only:
 		if args.analysis_task:
+			e = executor.LocalExecutor()
+
 			print('Running %s' % args.analysis_task)
 			e.run(metaDataSet.load_analysis_task(args.analysis_task),
 				  index=args.fragment_index)
