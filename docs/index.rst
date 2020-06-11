@@ -16,6 +16,7 @@ datasets (i.e. a cell-by-gene matrix).
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    installation
    usage

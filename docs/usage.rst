@@ -112,12 +112,11 @@ workflow can be executed by running:
     python -m mercluster 'metadataset1'
 
 .. note::
-
     The construction and execution of a workflow can be performed in one line:
 
     .. code-block:: none
 
-    python -m mercluster 'metadataset1' --dataset-list dataset1 dataset2 -a /path/to/analysistasks.json
+        python -m mercluster 'metadataset1' --dataset-list dataset1 dataset2 -a /path/to/analysistasks.json
 
 Adding the ``--snakemake-parameters`` flag to these commands allows you to pass
 additional parameters to snakemake by providing a path to a json file containing

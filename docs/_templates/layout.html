@@ -15,6 +15,11 @@
 {{ super() }}
 {% endblock %}
 
-{# put the sidebar before the body #}
-{% block sidebar1 %}{{ sidebar() }}{% endblock %}
-{% block sidebar2 %}{% endblock %}
+
+{% block menu %}
+        {{ super() }}
+        <a href="genindex.html">Index</a>
+{% endblock %}
+<!--{# put the sidebar before the body #}-->
+<!--{% block sidebar1 %}{{ sidebar() }}{% endblock %}-->
+<!--{% block sidebar2 %}{% endblock %}-->
